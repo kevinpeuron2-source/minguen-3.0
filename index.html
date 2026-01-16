@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MINGUEN CHRONO | Pro Timing Systems</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
+            colors: {
+              brand: {
+                black: '#020617',
+                navy: '#0f172a',
+                blue: '#3b82f6',
+                neon: '#10b981',
+                danger: '#f43f5e',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        body { background-color: #020617; color: #f8fafc; overflow-x: hidden; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Custom scrollbar for a sleek look */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        .scanline {
+            position: fixed; top: 0; left: 0; width: 100%; height: 2px;
+            background: rgba(59, 130, 246, 0.1);
+            animation: scanline 8s linear infinite;
+            pointer-events: none; z-index: 9999;
+        }
+
+        #root:empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+        }
+        #root:empty::before {
+            content: "";
+            width: 48px; height: 48px;
+            border: 4px solid #1e293b;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 24px;
+        }
+        #root:empty::after {
+            content: "MINGUEN CHRONO ENGINE INITIALIZING...";
+            color: #3b82f6;
+            font-weight: 900;
+            letter-spacing: 0.3em;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "firebase/": "https://esm.sh/firebase@^12.8.0/",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.12.0"
+  }
+}
+</script>
+</head>
+<body class="bg-brand-black text-slate-100">
+    <div class="scanline"></div>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>

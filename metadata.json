@@ -1,0 +1,7 @@
+{
+  "name": "Minguen Chrono 3.0",
+  "description": "Système complet de chronométrage professionnel by K. PEURON. Synchronisation Firebase en temps réel, gestion des participants, checkpoints et résultats live.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
