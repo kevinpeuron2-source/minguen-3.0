@@ -1,4 +1,3 @@
-
 export enum RaceStatus {
   READY = 'READY',
   RUNNING = 'RUNNING',
@@ -20,19 +19,8 @@ export enum RaceType {
 export interface Checkpoint {
   id: string;
   name: string;
-  distance: number; // in km
+  distance: number;
   isMandatory: boolean;
-}
-
-export interface GlobalCombinedPost {
-  id: string;
-  name: string;
-  assignments: {
-    raceId: string;
-    raceName: string;
-    checkpointId: string;
-    checkpointName: string;
-  }[];
 }
 
 export interface Participant {
@@ -56,7 +44,6 @@ export interface Passage {
   checkpointName: string;
   timestamp: number;
   netTime: number;
-  rank?: number;
 }
 
 export interface Race {
@@ -67,14 +54,58 @@ export interface Race {
   status: RaceStatus;
   startTime?: number;
   checkpoints: Checkpoint[];
-  segments?: string[]; // Disciplines entre les points (ex: ["Trail", "VTT"])
+  segments?: string[];
 }
 
+/**
+ * Interface Maîtresse : RenderReadyResult
+ * Objet aplati prêt pour le DOM et l'Export Excel (Zéro calcul en vue)
+ */
+export interface RenderReadyResult {
+  id: string;
+  bib: string;
+  fullName: string;
+  firstName: string;
+  lastName: string;
+  category: string;
+  gender: string;
+  club: string;
+  status: ParticipantStatus;
+  progress: number; // 0-100
+  rank: number;
+  netTimeMs: number;
+  displayTime: string; // HH:mm:ss.SS
+  displaySpeed: string; // XX.XX km/h
+  lastCheckpointName: string;
+  passedCheckpointsCount: number;
+  lastTimestamp: number;
+}
+
+export interface RaceStats {
+  totalEngaged: number;
+  finishedCount: number;
+  dnfCount: number;
+  onTrackCount: number;
+}
+
+// Fix: Added missing GlobalCombinedPost interface to resolve import errors in views
+export interface GlobalCombinedPost {
+  id: string;
+  name: string;
+  assignments: {
+    raceId: string;
+    raceName: string;
+    checkpointId: string;
+    checkpointName: string;
+  }[];
+}
+
+// Fix: Added missing MarshalPresence interface to resolve import errors in views
 export interface MarshalPresence {
   id: string;
   name: string;
   stationName: string;
-  checkpointId: string;
   raceId: string;
+  checkpointId: string;
   lastActive: number;
 }
