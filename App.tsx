@@ -20,14 +20,16 @@ const App: React.FC = () => {
     <DatabaseProvider>
       <Router>
         <Routes>
-          {/* Routes publiques, autonomes et outils plein écran */}
+          {/* Routes plein écran (Broadcast & Outils Pro) */}
           <Route path="/live" element={<LiveView />} />
+          <Route path="/terminal" element={<FinishTerminalView />} />
+          <Route path="/speaker" element={<SpeakerView />} />
+          
+          {/* Outils secondaires & Mobile */}
           <Route path="/signaleur-terrain" element={<MarshalInputView />} />
           <Route path="/remote-finish" element={<RemoteFinishView />} />
-          <Route path="/finish-terminal" element={<FinishTerminalView />} />
-          <Route path="/speaker-tool" element={<SpeakerView />} />
           
-          {/* Routes administration */}
+          {/* Routes administration avec Sidebar */}
           <Route path="/*" element={
             <Layout>
               <Routes>

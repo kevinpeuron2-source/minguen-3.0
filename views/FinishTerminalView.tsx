@@ -7,15 +7,11 @@ import {
   CheckCircle2, 
   History, 
   Undo2, 
-  X, 
-  Delete, 
   Timer, 
-  ChevronRight, 
   ArrowLeft,
-  Settings,
   Zap,
-  User,
-  Activity
+  Activity,
+  UserCheck
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -43,7 +39,7 @@ const FinishTerminalView: React.FC = () => {
     const q = query(
       collection(db, 'passages'), 
       orderBy('timestamp', 'desc'), 
-      limit(10)
+      limit(5)
     );
     const unsubPassages = onSnapshot(q, snap => {
       setRecentPassages(snap.docs.map(d => ({ id: d.id, ...d.data() } as Passage)));
@@ -52,10 +48,22 @@ const FinishTerminalView: React.FC = () => {
     return () => { unsubRaces(); unsubParts(); unsubPassages(); };
   }, [selectedRaceId]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.activeElement !== inputRef.current) {
+        inputRef.current?.focus();
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
   const activeRace = useMemo(() => races.find(r => r.id === selectedRaceId), [races, selectedRaceId]);
 
-  const handleBibEntry = async (bib: string) => {
+  const handleBibEntry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const bib = bibInput.trim();
     if (!bib) return;
+
     const runner = participants.find(p => p.bib === bib && p.raceId === selectedRaceId);
     
     if (!runner) {
@@ -66,26 +74,31 @@ const FinishTerminalView: React.FC = () => {
 
     if (!activeRace || activeRace.status !== RaceStatus.RUNNING) {
       alert("La course n'est pas lancée.");
+      setBibInput('');
       return;
     }
 
     const timestamp = Date.now();
     const netTime = timestamp - (runner.startTime || activeRace.startTime || timestamp);
 
-    await addDoc(collection(db, 'passages'), {
-      participantId: runner.id,
-      bib: runner.bib,
-      checkpointId: 'finish',
-      checkpointName: 'ARRIVÉE',
-      timestamp,
-      netTime
-    });
+    try {
+      await addDoc(collection(db, 'passages'), {
+        participantId: runner.id,
+        bib: runner.bib,
+        checkpointId: 'finish',
+        checkpointName: 'ARRIVÉE',
+        timestamp,
+        netTime
+      });
 
-    await updateDoc(doc(db, 'participants', runner.id), { status: ParticipantStatus.FINISHED });
-    
-    setLastValidation({ bib: runner.bib, name: `${runner.lastName} ${runner.firstName}` });
-    setBibInput('');
-    setTimeout(() => setLastValidation(null), 3000);
+      await updateDoc(doc(db, 'participants', runner.id), { status: ParticipantStatus.FINISHED });
+      
+      setLastValidation({ bib: runner.bib, name: `${runner.lastName} ${runner.firstName}` });
+      setBibInput('');
+      setTimeout(() => setLastValidation(null), 2500);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const cancelArrival = async (passage: Passage) => {
@@ -94,168 +107,107 @@ const FinishTerminalView: React.FC = () => {
     await updateDoc(doc(db, 'participants', passage.participantId), { status: ParticipantStatus.STARTED });
   };
 
-  const appendToBib = (val: string) => setBibInput(prev => (prev + val).slice(0, 5));
-  const backspace = () => setBibInput(prev => prev.slice(0, -1));
-
   return (
-    <div className="fixed inset-0 bg-slate-50 flex flex-col font-sans overflow-hidden">
-      {/* Header compact & Status */}
-      <header className="bg-white border-b border-slate-200 px-10 py-6 flex justify-between items-center shadow-sm z-20">
+    <div className="fixed inset-0 bg-[#020617] text-white flex flex-col font-sans overflow-hidden">
+      {/* Top Bar Navigation */}
+      <header className="bg-slate-900/50 border-b border-white/5 px-10 py-6 flex justify-between items-center z-20 backdrop-blur-md">
         <div className="flex items-center gap-6">
-          <Link to="/" className="p-3 bg-slate-100 text-slate-400 hover:text-indigo-600 rounded-2xl transition-all">
+          <Link to="/" className="p-3 bg-white/5 text-slate-400 hover:text-indigo-400 rounded-2xl transition-all border border-white/5">
             <ArrowLeft size={24} />
           </Link>
           <div>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <Timer className="text-indigo-600" size={24} /> TERMINAL<span className="text-indigo-600">ARRIVÉE</span>
+            <h1 className="text-xl font-black tracking-tighter flex items-center gap-3">
+              <Timer className="text-indigo-500" size={24} /> ARRIVAL<span className="text-indigo-500">TERMINAL</span>
             </h1>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Minguen OS 4.0 Pro Station</p>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-0.5">High-Frequency Entry Station</p>
           </div>
         </div>
 
         <div className="flex items-center gap-8">
           <div className="text-right">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Chrono Course</p>
-            <p className="text-3xl font-black text-indigo-600 mono leading-none">
+            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Chrono Course</p>
+            <p className="text-3xl font-black text-emerald-500 mono leading-none">
               {activeRace?.startTime ? formatDuration(Date.now() - activeRace.startTime).split('.')[0] : '00:00:00'}
             </p>
           </div>
           <select 
-            className="bg-slate-100 border-none rounded-2xl px-6 py-4 font-black text-sm text-slate-900 outline-none focus:ring-4 focus:ring-indigo-100 cursor-pointer"
+            className="bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-black text-sm text-indigo-400 outline-none focus:ring-4 focus:ring-indigo-500/20 cursor-pointer"
             value={selectedRaceId}
             onChange={e => setSelectedRaceId(e.target.value)}
           >
-            {races.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            {races.map(r => <option key={r.id} value={r.id} className="bg-slate-900">{r.name}</option>)}
           </select>
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Main Recording Interface */}
-        <div className="flex-1 p-12 flex flex-col gap-10">
+      <div className="flex-1 flex flex-col items-center justify-center p-12 relative">
+        {/* Giant Glow Background */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[60%] bg-indigo-600/10 blur-[150px] rounded-full pointer-events-none"></div>
+
+        <div className="w-full max-w-5xl space-y-12 relative z-10">
           
-          {/* Validation Feedback Banner */}
-          <div className={`h-24 rounded-[2rem] flex items-center justify-center gap-4 transition-all duration-500 overflow-hidden ${
-            lastValidation ? 'bg-indigo-600 shadow-xl shadow-indigo-100 translate-y-0' : 'bg-slate-100 opacity-20 -translate-y-2'
-          }`}>
+          {/* Active Entry Zone */}
+          <form onSubmit={handleBibEntry} className="flex flex-col items-center gap-10">
+            <div className="text-center space-y-4">
+              <span className="text-sm font-black text-slate-500 uppercase tracking-[0.5em]">Input Bib Number</span>
+              <div className="relative">
+                <input
+                  ref={inputRef}
+                  type="number"
+                  className="w-full bg-transparent text-center text-[18rem] md:text-[24rem] font-black mono outline-none text-white placeholder:text-white/[0.02]"
+                  placeholder="000"
+                  value={bibInput}
+                  onChange={e => setBibInput(e.target.value)}
+                  autoFocus
+                />
+                <div className="absolute inset-x-0 bottom-10 h-2 bg-indigo-500/20 rounded-full blur-sm"></div>
+              </div>
+            </div>
+
             {lastValidation ? (
-              <>
-                <CheckCircle2 size={32} className="text-white animate-in zoom-in" />
-                <span className="text-2xl font-black text-white uppercase tracking-tight">
-                  #{lastValidation.bib} • {lastValidation.name} VALIDÉ
-                </span>
-              </>
+              <div className="bg-emerald-500 px-12 py-6 rounded-[2.5rem] shadow-2xl shadow-emerald-500/20 animate-in zoom-in duration-300 flex items-center gap-6 border border-emerald-400/50">
+                <UserCheck size={48} className="text-white" />
+                <div>
+                  <p className="text-5xl font-black uppercase tracking-tight">#{lastValidation.bib} RECORDED</p>
+                  <p className="text-sm font-bold opacity-80 uppercase tracking-widest">{lastValidation.name}</p>
+                </div>
+              </div>
             ) : (
-              <span className="text-slate-400 font-black uppercase text-sm tracking-widest">En attente de saisie...</span>
+              <div className="h-[120px]"></div>
             )}
-          </div>
-
-          <div className="flex-1 grid grid-cols-12 gap-10">
-            {/* Display & Numeric Keypad */}
-            <div className="col-span-12 lg:col-span-7 flex flex-col gap-8">
-              <div className="bg-white border-2 border-slate-200 rounded-[3rem] p-12 shadow-soft text-center flex flex-col justify-center">
-                <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] mb-4">Dossard en cours</span>
-                <div className="text-[12rem] font-black text-slate-900 mono leading-none tracking-tighter">
-                  {bibInput || <span className="text-slate-100">000</span>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4 flex-1">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, 'OK'].map(key => (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      if (key === 'C') backspace();
-                      else if (key === 'OK') handleBibEntry(bibInput);
-                      else appendToBib(key.toString());
-                    }}
-                    className={`rounded-[2.5rem] font-black text-4xl transition-all active:scale-95 shadow-soft border border-slate-100 ${
-                      key === 'OK' ? 'bg-indigo-600 text-white col-span-1' : 
-                      key === 'C' ? 'bg-rose-50 text-rose-500' : 'bg-white text-slate-900 hover:bg-slate-50'
-                    }`}
-                  >
-                    {key}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* History Sidebar */}
-            <div className="col-span-12 lg:col-span-5 flex flex-col gap-6">
-              <div className="bg-white rounded-[3rem] border border-slate-200 p-8 shadow-soft flex-1 flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between mb-8 px-2">
-                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-3">
-                    <History size={18} /> Dernières Arrivées
-                  </h3>
-                  <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-[10px] font-black">TOP 10</span>
-                </div>
-
-                <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-hide">
-                  {recentPassages.map((p, i) => {
-                    const runner = participants.find(part => part.id === p.participantId);
-                    return (
-                      <div key={p.id} className="bg-slate-50 p-5 rounded-3xl border border-slate-100 flex items-center justify-between group animate-in slide-in-from-right-4" style={{ animationDelay: `${i * 50}ms` }}>
-                        <div className="flex items-center gap-5">
-                          <div className="w-12 h-12 bg-white text-indigo-600 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm border border-slate-200">
-                            {p.bib}
-                          </div>
-                          <div>
-                            <p className="font-black text-sm text-slate-900 uppercase tracking-tight truncate w-40">{runner?.lastName || '---'}</p>
-                            <p className="text-[10px] font-black text-slate-400 mono mt-0.5">{formatDuration(p.netTime).split('.')[0]}</p>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={() => cancelArrival(p)}
-                          className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-100 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                        >
-                          <Undo2 size={20} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                  {recentPassages.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-200 gap-4 opacity-50">
-                      <Zap size={48} />
-                      <p className="text-[10px] font-black uppercase tracking-widest">Aucune arrivée détectée</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Controls & Quick Info */}
-              <div className="bg-indigo-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-xl">
-                <div className="absolute top-0 right-0 p-6 opacity-10">
-                  <Activity size={80} />
-                </div>
-                <div className="relative z-10 flex flex-col gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
-                      <Settings size={24} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Configuration</p>
-                      <p className="font-black text-lg">POSTE FIXE PRINCIPAL</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center pt-4 border-t border-white/10">
-                    <div>
-                      <p className="text-[9px] font-black text-indigo-400 uppercase">Synchronisation</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                        <span className="text-xs font-black">CLOUD OK</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[9px] font-black text-indigo-400 uppercase">Latence</p>
-                      <p className="text-xs font-black">12ms</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          </form>
         </div>
       </div>
+
+      {/* Footer / Side History */}
+      <footer className="bg-slate-900/50 border-t border-white/5 p-8 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3">
+              <History size={16} /> RECENT PASSAGES
+            </h3>
+            <div className="flex gap-4">
+              {recentPassages.map((p, i) => (
+                <div key={p.id} className="bg-white/5 border border-white/10 px-6 py-4 rounded-3xl flex items-center gap-4 group hover:bg-white/10 transition-all">
+                  <span className="text-2xl font-black mono text-indigo-400">#{p.bib}</span>
+                  <div className="h-8 w-px bg-white/10"></div>
+                  <button onClick={() => cancelArrival(p)} className="text-slate-500 hover:text-rose-500 transition-colors">
+                    <Undo2 size={18} />
+                  </button>
+                </div>
+              ))}
+              {recentPassages.length === 0 && (
+                <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest italic">Waiting for arrivals...</p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-slate-600">
+             <Zap size={16} />
+             <span className="text-[10px] font-black uppercase tracking-widest">Minguen Pro Station v4.0</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
