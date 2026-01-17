@@ -206,8 +206,8 @@ const ParticipantsView: React.FC = () => {
     <div className="space-y-8 pb-20">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Gestion des Participants</h1>
-          <p className="text-slate-500 font-medium">Contrôle et import de la base de données</p>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Gestion des Engagés</h1>
+          <p className="text-slate-500 font-medium">Contrôle et import de la base de données coureurs</p>
         </div>
         <div className="flex gap-3 w-full md:w-auto">
           <label className="flex-1 md:flex-initial bg-white border-2 border-slate-100 text-slate-600 px-6 py-4 rounded-[2rem] font-black flex items-center justify-center gap-3 cursor-pointer hover:bg-slate-50 transition-colors shadow-sm">
@@ -232,7 +232,7 @@ const ParticipantsView: React.FC = () => {
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
           <input 
             type="text" 
-            placeholder="Rechercher un participant..."
+            placeholder="Nom, prénom ou n° de dossard..."
             className="w-full bg-slate-50 border-2 border-slate-50 rounded-2xl pl-14 pr-6 py-4 font-bold text-slate-900 outline-none focus:border-blue-500 transition-all"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
@@ -393,7 +393,7 @@ const ParticipantsView: React.FC = () => {
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-[3rem] p-10 w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-black text-slate-900">{editingId ? 'Modifier le Participant' : 'Nouveau Participant'}</h2>
+              <h2 className="text-3xl font-black text-slate-900">{editingId ? 'Modifier le Concurrent' : 'Nouveau Concurrent'}</h2>
               <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={24}/></button>
             </div>
             

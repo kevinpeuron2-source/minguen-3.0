@@ -23,11 +23,11 @@ const Sidebar: React.FC = () => {
   const navItems = [
     { path: '/', icon: LayoutDashboard, label: 'Tableau de bord' },
     { path: '/races', icon: Flag, label: 'Épreuves' },
-    { path: '/participants', icon: Users, label: 'Participants' },
+    { path: '/participants', icon: Users, label: 'Engagés' },
     { path: '/timing', icon: Timer, label: 'Chronométrage' },
     { path: '/results', icon: Trophy, label: 'Leaders' },
     { path: '/signaleur', icon: ShieldCheck, label: 'Signaleurs' },
-    { path: '/admin', icon: Settings, label: 'Le QG' },
+    { path: '/admin', icon: Settings, label: 'Administration' },
   ];
 
   return (
@@ -96,11 +96,11 @@ const Sidebar: React.FC = () => {
           >
             <Mic size={22} className="shrink-0" />
             <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-              L'appli pour Alain
+              Console Speaker
             </span>
             {!isExpanded && (
               <div className="absolute left-16 px-3 py-2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
-                Alain
+                Speaker
               </div>
             )}
           </Link>
@@ -127,11 +127,11 @@ const Sidebar: React.FC = () => {
           >
             <Activity size={22} className="shrink-0" />
             <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-              MinguenLive
+              Live Public
             </span>
             {!isExpanded && (
               <div className="absolute left-16 px-3 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
-                MinguenLive
+                Live TV
               </div>
             )}
           </Link>

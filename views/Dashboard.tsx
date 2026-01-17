@@ -95,7 +95,7 @@ const Dashboard: React.FC = () => {
 
   const stats = [
     { label: 'Courses Actives', value: races.filter(r => r.status === RaceStatus.RUNNING).length, icon: Zap, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { label: 'Participants', value: participants.length, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Athlètes Engagés', value: participants.length, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: 'Derniers Passages', value: passages.length, icon: Trophy, color: 'text-amber-600', bg: 'bg-amber-50' },
     { label: 'Points Terrain', value: races.reduce((acc, r) => acc + r.checkpoints.length, 0), icon: MapPin, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
@@ -170,7 +170,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-8">
                       <div className="text-right">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Participants</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Engagés</p>
                         <p className="text-2xl font-black text-indigo-600 mono leading-none">{race.total}</p>
                       </div>
                       <div className="text-right">
