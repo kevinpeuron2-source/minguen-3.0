@@ -41,8 +41,10 @@ const LiveView: React.FC = () => {
       return { rows: 1, cols: count };
     } else {
       // 5 courses ou plus : split sur 2 lignes
-      // On équilibre au mieux (ex: 5 -> 3 sur ligne 1, 2 sur ligne 2)
-      return { rows: 2, cols: Math.ceil(count / 2) };
+      // Contrainte : Max 4 colonnes par ligne
+      const rows = 2;
+      const cols = Math.min(4, Math.ceil(count / rows));
+      return { rows, cols };
     }
   }, [activeRaces]);
 
@@ -116,7 +118,7 @@ const LiveView: React.FC = () => {
         {activeRaces.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center gap-6 opacity-20">
              <Activity size={80} />
-             <p className="text-2xl font-black uppercase tracking-[0.5em]">Waiting for Race Start...</p>
+             <p className="text-2xl font-black uppercase tracking-[0.5em]">En attente du départ...</p>
           </div>
         ) : (
           activeRaces.map(race => (
@@ -253,7 +255,7 @@ const RaceColumn: React.FC<RaceColumnProps> = ({ race, genderFilter, displayMode
             {columnData.length === 0 && (
               <tr>
                 <td colSpan={4} className="py-20 text-center">
-                  <p className="text-[8px] font-black text-slate-800 uppercase tracking-[0.3em]">Awaiting Pack...</p>
+                  <p className="text-[8px] font-black text-slate-800 uppercase tracking-[0.3em]">En attente de data...</p>
                 </td>
               </tr>
             )}

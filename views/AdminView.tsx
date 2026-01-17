@@ -148,7 +148,7 @@ const AdminView: React.FC = () => {
             <Lock size={48} />
           </div>
           <h2 className="text-3xl font-black text-slate-900 mb-2 uppercase tracking-tight">Accès Restreint</h2>
-          <p className="text-slate-400 mb-10 font-bold uppercase text-[10px] tracking-widest">Zone de maintenance Minguen Chrono</p>
+          <p className="text-slate-400 mb-10 font-bold uppercase text-[10px] tracking-widest">Le QG - Zone de maintenance</p>
           
           <form onSubmit={handleAdminLogin} className="space-y-6 relative z-10">
             <input 
@@ -172,7 +172,7 @@ const AdminView: React.FC = () => {
     <div className="max-w-5xl mx-auto space-y-10 pb-20 animate-in fade-in duration-500">
       <header className="flex justify-between items-end">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tight">Administration</h1>
+          <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tight">Le QG - Administration</h1>
           <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-2">Maintenance système et outils de test</p>
         </div>
         <button 
@@ -199,7 +199,7 @@ const AdminView: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <h3 className="font-black text-blue-700 text-xl uppercase tracking-tight">Lancer Simulation</h3>
-                  <p className="text-sm text-blue-500 font-medium">Génère des temps pour vos <span className="font-black">vrais inscrits</span></p>
+                  <p className="text-sm text-blue-500 font-medium">Génère des temps pour vos <span className="font-black">vrais participants</span></p>
                 </div>
                 <Users className="text-blue-300 group-hover:scale-110 transition-transform" size={32} />
               </div>
@@ -263,7 +263,7 @@ const AdminView: React.FC = () => {
 
           <div className="p-8 rounded-[2.5rem] bg-red-50/50 border-2 border-red-100 space-y-6">
             <p className="text-xs font-bold text-red-800 leading-relaxed">
-              La réinitialisation supprimera <span className="font-black">tous les coureurs, tous les temps et toutes les courses</span>. Cette action est irréversible.
+              La réinitialisation supprimera <span className="font-black">tous les participants, tous les temps et toutes les courses</span>. Cette action est irréversible.
             </p>
             
             <div className="space-y-2">
