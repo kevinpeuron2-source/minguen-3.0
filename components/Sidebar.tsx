@@ -12,8 +12,8 @@ import {
   ChevronRight,
   Zap,
   Activity,
-  Monitor,
-  Gamepad2
+  Mic,
+  Monitor
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -73,7 +73,7 @@ const Sidebar: React.FC = () => {
                 {item.label}
               </span>
               {!isExpanded && (
-                <div className="absolute left-16 px-3 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl">
+                <div className="absolute left-16 px-3 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
                   {item.label}
                 </div>
               )}
@@ -87,35 +87,57 @@ const Sidebar: React.FC = () => {
 
       {/* Footer Links */}
       <div className="p-4 border-t border-slate-100 space-y-2">
-        <Link
-          to="/speaker"
-          className="flex items-center gap-4 px-3 py-3 rounded-xl text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all font-bold group overflow-hidden"
-        >
-          <Monitor size={22} className="shrink-0" />
-          <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-            Console Speaker
-          </span>
-        </Link>
-        <Link
-          to="/terminal"
-          className="flex items-center gap-4 px-3 py-3 rounded-xl text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition-all font-bold group overflow-hidden"
-        >
-          <Gamepad2 size={22} className="shrink-0" />
-          <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-            Terminal Arrivée
-          </span>
-        </Link>
-        <Link
-          to="/live"
-          target="_blank"
-          className="flex items-center gap-4 px-3 py-3 rounded-xl text-emerald-600 hover:bg-emerald-50 transition-all font-bold group overflow-hidden"
-        >
-          <Activity size={22} className="shrink-0" />
-          <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-            Live Public
-          </span>
-        </Link>
-        <div className="flex justify-center py-2">
+        <div className={`flex ${isExpanded ? 'flex-col space-y-2' : 'flex-col items-center space-y-4'}`}>
+          <Link
+            to="/speaker"
+            className={`flex items-center gap-4 px-3 py-3 rounded-xl transition-all font-bold group overflow-hidden ${
+              location.pathname === '/speaker' ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-blue-50 hover:text-blue-600'
+            }`}
+          >
+            <Mic size={22} className="shrink-0" />
+            <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+              Speaker
+            </span>
+            {!isExpanded && (
+              <div className="absolute left-16 px-3 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
+                Console Speaker
+              </div>
+            )}
+          </Link>
+          <Link
+            to="/finish-terminal"
+            className={`flex items-center gap-4 px-3 py-3 rounded-xl transition-all font-bold group overflow-hidden ${
+              location.pathname === '/finish-terminal' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-400 hover:bg-indigo-50 hover:text-indigo-600'
+            }`}
+          >
+            <Zap size={22} className="shrink-0" />
+            <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+              Terminal
+            </span>
+            {!isExpanded && (
+              <div className="absolute left-16 px-3 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
+                Terminal Arrivée
+              </div>
+            )}
+          </Link>
+          <Link
+            to="/live"
+            target="_blank"
+            className="flex items-center gap-4 px-3 py-3 rounded-xl text-emerald-600 hover:bg-emerald-50 transition-all font-bold group overflow-hidden"
+          >
+            <Activity size={22} className="shrink-0" />
+            <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+              Live Public
+            </span>
+            {!isExpanded && (
+              <div className="absolute left-16 px-3 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
+                Live Public
+              </div>
+            )}
+          </Link>
+        </div>
+        
+        <div className="flex justify-center py-2 mt-2">
           {isExpanded ? (
             <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">OS 4.0 Stable</div>
           ) : (
