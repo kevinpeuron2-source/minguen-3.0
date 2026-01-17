@@ -85,7 +85,7 @@ const Sidebar: React.FC = () => {
         })}
       </nav>
 
-      {/* Footer Links */}
+      {/* Footer Links - Quick Access Tools */}
       <div className="p-4 border-t border-slate-100 space-y-2">
         <div className={`flex ${isExpanded ? 'flex-col space-y-2' : 'flex-col items-center space-y-4'}`}>
           <Link
@@ -96,11 +96,11 @@ const Sidebar: React.FC = () => {
           >
             <Mic size={22} className="shrink-0" />
             <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-              Speaker
+              Console Speaker
             </span>
             {!isExpanded && (
-              <div className="absolute left-16 px-3 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
-                Console Speaker
+              <div className="absolute left-16 px-3 py-2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
+                Speaker
               </div>
             )}
           </Link>
@@ -112,11 +112,11 @@ const Sidebar: React.FC = () => {
           >
             <Zap size={22} className="shrink-0" />
             <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-              Terminal
+              Terminal Arrivée
             </span>
             {!isExpanded && (
-              <div className="absolute left-16 px-3 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
-                Terminal Arrivée
+              <div className="absolute left-16 px-3 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
+                Terminal
               </div>
             )}
           </Link>
@@ -131,7 +131,7 @@ const Sidebar: React.FC = () => {
             </span>
             {!isExpanded && (
               <div className="absolute left-16 px-3 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
-                Live Public
+                Live TV
               </div>
             )}
           </Link>
