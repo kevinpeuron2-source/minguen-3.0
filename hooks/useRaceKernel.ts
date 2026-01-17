@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Race, Participant, Passage, RenderReadyResult, RaceStats, ParticipantStatus } from '../types';
+import { Race, Participant, Passage, RenderReadyResult, RaceStats, ParticipantStatus, SegmentStats } from '../types';
 import { formatMsToDisplay, calculateSpeed } from '../utils/formatters';
 
 export const useRaceKernel = (selectedRaceId: string) => {
@@ -41,13 +41,14 @@ export const useRaceKernel = (selectedRaceId: string) => {
     mandatoryIds.add('finish');
     const totalMandatory = mandatoryIds.size;
 
-    // Prépare les points pour le calcul des tronçons
     const checkpointsOrdered = [...activeRace.checkpoints].sort((a, b) => a.distance - b.distance);
     const pointsSequence = [
-      { id: 'start', name: 'Départ' },
+      { id: 'start', name: 'Départ', distance: 0 },
       ...checkpointsOrdered,
-      { id: 'finish', name: 'Arrivée' }
+      { id: 'finish', name: 'Arrivée', distance: activeRace.distance }
     ];
+
+    const segmentNames = activeRace.segmentNames || pointsSequence.slice(1).map((p, i) => `${pointsSequence[i].name} → ${p.name}`);
 
     const baseResults: RenderReadyResult[] = participants
       .filter(p => p.raceId === selectedRaceId)
@@ -64,22 +65,31 @@ export const useRaceKernel = (selectedRaceId: string) => {
         const netTimeMs = lastPassage?.netTime || 0;
         const lastTimestamp = lastPassage?.timestamp || 0;
 
-        // Calcul des Tronçons (Segment Times)
         const segmentTimes: Record<string, string> = {};
+        const splits: SegmentStats[] = [];
         let lastPointTime = p.startTime || activeRace.startTime || 0;
+        let lastPointDist = 0;
 
         pointsSequence.forEach((point, idx) => {
-          if (idx === 0) return; // Skip Départ as origin
+          if (idx === 0) return;
           
           const passageAtPoint = pPassages.find(pas => pas.checkpointId === point.id);
-          const prevPointName = pointsSequence[idx-1].name;
-          const label = `${prevPointName} → ${point.name}`;
+          const label = segmentNames[idx - 1] || `${pointsSequence[idx-1].name} → ${point.name}`;
 
           if (passageAtPoint) {
             const currentAbsTime = passageAtPoint.timestamp;
             const segmentDuration = currentAbsTime - lastPointTime;
+            const segmentDist = point.distance - lastPointDist;
+            
             segmentTimes[label] = formatMsToDisplay(segmentDuration).split('.')[0];
+            splits.push({
+              label,
+              duration: formatMsToDisplay(segmentDuration).split('.')[0],
+              speed: calculateSpeed(segmentDist, segmentDuration),
+              rankOnSegment: 0 // Will be computed after mapping all
+            });
             lastPointTime = currentAbsTime;
+            lastPointDist = point.distance;
           } else {
             segmentTimes[label] = "--:--:--";
           }
@@ -106,11 +116,12 @@ export const useRaceKernel = (selectedRaceId: string) => {
           lastCheckpointName: lastPassage?.checkpointName || "Départ",
           passedCheckpointsCount: passedMandatory,
           lastTimestamp,
-          segmentTimes
+          segmentTimes,
+          splits
         } as RenderReadyResult;
       });
 
-    // 1. Tri général
+    // Tri et Rangs
     const sorted = baseResults.sort((a, b) => {
       if (a.passedCheckpointsCount !== b.passedCheckpointsCount) {
         return b.passedCheckpointsCount - a.passedCheckpointsCount;
@@ -118,26 +129,35 @@ export const useRaceKernel = (selectedRaceId: string) => {
       return a.lastTimestamp - b.lastTimestamp;
     }).map((item, index) => ({ ...item, rank: index + 1 }));
 
-    // 2. Rangs par Sexe
-    const genders = ['M', 'F'];
-    genders.forEach(g => {
+    // Rangs par Sexe
+    ['M', 'F'].forEach(g => {
       let gRank = 1;
-      sorted.forEach(item => {
-        if (item.gender === g) {
-          item.rankGender = gRank++;
-        }
-      });
+      sorted.forEach(item => { if (item.gender === g) item.rankGender = gRank++; });
     });
 
-    // 3. Rangs par Catégorie
+    // Rangs par Catégorie
     const cats = Array.from(new Set(sorted.map(s => s.category)));
     cats.forEach(c => {
       let cRank = 1;
-      sorted.forEach(item => {
-        if (item.category === c) {
-          item.rankCategory = cRank++;
-        }
-      });
+      sorted.forEach(item => { if (item.category === c) item.rankCategory = cRank++; });
+    });
+
+    // Calcul des rangs par segment
+    segmentNames.forEach((name) => {
+        const finishersOfSegment = sorted
+            .filter(r => r.segmentTimes[name] && r.segmentTimes[name] !== "--:--:--")
+            .sort((a, b) => {
+                const parse = (s: string) => {
+                    const [h, m, s_] = s.split(':').map(Number);
+                    return h * 3600 + m * 60 + s_;
+                };
+                return parse(a.segmentTimes[name]) - parse(b.segmentTimes[name]);
+            });
+        
+        finishersOfSegment.forEach((r, idx) => {
+            const split = r.splits.find(s => s.label === name);
+            if (split) split.rankOnSegment = idx + 1;
+        });
     });
 
     return sorted;

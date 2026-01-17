@@ -31,7 +31,7 @@ export interface Participant {
   gender: string;
   category: string;
   club?: string;
-  city?: string; // Ajout de la ville
+  city?: string;
   raceId: string;
   status: ParticipantStatus;
   startTime?: number;
@@ -55,13 +55,17 @@ export interface Race {
   status: RaceStatus;
   startTime?: number;
   checkpoints: Checkpoint[];
-  segments?: string[];
+  segments?: string[]; // Disciplines (Triathlon style)
+  segmentNames?: string[]; // Noms personnalisés des tronçons (ex: "La Montée Noire")
 }
 
-/**
- * Interface Maîtresse : RenderReadyResult
- * Objet aplati prêt pour le DOM et l'Export Excel
- */
+export interface SegmentStats {
+  label: string;
+  duration: string;
+  speed: string;
+  rankOnSegment: number;
+}
+
 export interface RenderReadyResult {
   id: string;
   bib: string;
@@ -71,19 +75,20 @@ export interface RenderReadyResult {
   category: string;
   gender: string;
   club: string;
-  city: string; // Ajout de la ville
+  city: string;
   status: ParticipantStatus;
-  progress: number; // 0-100
+  progress: number;
   rank: number;
-  rankGender: number; // Rang par sexe
-  rankCategory: number; // Rang par catégorie
+  rankGender: number;
+  rankCategory: number;
   netTimeMs: number;
-  displayTime: string; // HH:mm:ss.SS
-  displaySpeed: string; // XX.XX km/h
+  displayTime: string;
+  displaySpeed: string;
   lastCheckpointName: string;
   passedCheckpointsCount: number;
   lastTimestamp: number;
-  segmentTimes: Record<string, string>; // Temps par tronçon (ex: "Départ - CP1": "00:12:04")
+  segmentTimes: Record<string, string>; // Temps brut par segment
+  splits: SegmentStats[]; // Données enrichies pour l'affichage (Speaker/Results)
 }
 
 export interface RaceStats {

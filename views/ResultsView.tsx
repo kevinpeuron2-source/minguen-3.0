@@ -15,7 +15,8 @@ import {
   Building2,
   Check,
   TrendingUp,
-  Activity
+  Activity,
+  Wind
 } from 'lucide-react';
 import { RenderReadyResult, ParticipantStatus } from '../types';
 
@@ -25,7 +26,6 @@ const ResultsView: React.FC = () => {
   const [viewMode, setViewMode] = useState<'all' | 'category' | 'podium'>('all');
   const [selectedCat, setSelectedCat] = useState('all');
 
-  // Sélecteur de colonnes dynamique
   const [visibleCols, setVisibleCols] = useState({
     rank: true,
     rankGender: true,
@@ -43,7 +43,6 @@ const ResultsView: React.FC = () => {
 
   const { kernelResults, races } = useRaceKernel(selectedRaceId);
 
-  // Auto-sélection
   if (!selectedRaceId && races.length > 0) {
     setSelectedRaceId(races[0].id);
   }
@@ -51,7 +50,6 @@ const ResultsView: React.FC = () => {
   const activeRace = races.find(r => r.id === selectedRaceId);
   const categories = useMemo(() => Array.from(new Set(kernelResults.map(p => p.category))), [kernelResults]);
 
-  // Résultats filtrés pour le tableau
   const displayResults = useMemo(() => {
     let filtered = kernelResults.filter(r => r.status === ParticipantStatus.FINISHED);
     if (viewMode === 'category' && selectedCat !== 'all') {
@@ -62,7 +60,6 @@ const ResultsView: React.FC = () => {
     return filtered;
   }, [kernelResults, viewMode, selectedCat]);
 
-  // Podiums Top 4
   const podiumH = useMemo(() => kernelResults.filter(r => r.gender === 'M' && r.status === ParticipantStatus.FINISHED).slice(0, 4), [kernelResults]);
   const podiumF = useMemo(() => kernelResults.filter(r => r.gender === 'F' && r.status === ParticipantStatus.FINISHED).slice(0, 4), [kernelResults]);
 
@@ -76,7 +73,6 @@ const ResultsView: React.FC = () => {
 
   return (
     <div className="space-y-12 pb-24 animate-in fade-in duration-500">
-      {/* Header moderne */}
       <header className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-soft flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="flex items-center gap-6">
           <div className="bg-indigo-600 p-4 rounded-3xl shadow-xl shadow-indigo-100">
@@ -104,17 +100,14 @@ const ResultsView: React.FC = () => {
         </div>
       </header>
 
-      {/* Podiums Top 4 Style Dashboard */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <PodiumBlock title="Podium Hommes" runners={podiumH} accent="indigo" />
         <PodiumBlock title="Podium Femmes" runners={podiumF} accent="rose" />
       </div>
 
       <div className="flex flex-col xl:flex-row gap-10">
-        {/* Panneau de configuration Latéral */}
-        <aside className="xl:w-80 space-y-8">
+        <aside className="xl:w-80 space-y-8 shrink-0">
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-soft space-y-10">
-            {/* Filtres de Vue */}
             <div>
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Filter size={14} /> Filtres Rapides
@@ -150,7 +143,6 @@ const ResultsView: React.FC = () => {
               </div>
             )}
 
-            {/* Sélecteur de Colonnes */}
             <div>
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Settings2 size={14} /> Colonnes dynamiques
@@ -190,7 +182,6 @@ const ResultsView: React.FC = () => {
           </div>
         </aside>
 
-        {/* Tableau des Résultats */}
         <div className="flex-1 bg-white rounded-[3rem] border border-slate-200 shadow-soft overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -255,16 +246,26 @@ const ResultsView: React.FC = () => {
                       {isExpanded && (
                         <tr className="bg-slate-50/50">
                           <td colSpan={12} className="px-10 py-10">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-4">
-                              {Object.entries(r.segmentTimes).map(([label, time]) => (
-                                <div key={label} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm group hover:border-indigo-500 transition-all">
-                                  <div className="flex justify-between items-start mb-2">
-                                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{label}</span>
-                                    <Activity size={14} className="text-slate-200" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-top-4">
+                              {r.splits.map((split, idx) => (
+                                <div key={idx} className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm group hover:border-indigo-500 transition-all relative overflow-hidden">
+                                  <div className="absolute top-0 right-0 p-3 opacity-5">
+                                      <TrendingUp size={40} />
                                   </div>
-                                  <p className="text-xl font-black text-slate-900 mono">{time}</p>
+                                  <div className="flex justify-between items-start mb-4">
+                                    <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{split.label}</span>
+                                    <span className="text-[9px] font-black text-slate-300 uppercase">#{split.rankOnSegment}</span>
+                                  </div>
+                                  <p className="text-xl font-black text-slate-900 mono mb-2">{split.duration}</p>
+                                  <div className="flex items-center gap-2 text-slate-400">
+                                      <Wind size={12} />
+                                      <span className="text-[10px] font-bold">{split.speed} km/h</span>
+                                  </div>
                                 </div>
                               ))}
+                              {r.splits.length === 0 && (
+                                <p className="col-span-full py-6 text-center text-slate-400 italic text-xs">Aucune donnée de tronçon disponible.</p>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -287,15 +288,10 @@ const ResultsView: React.FC = () => {
   );
 };
 
-// Composant Interne pour les Blocs Podium
 const PodiumBlock: React.FC<{ title: string, runners: RenderReadyResult[], accent: 'indigo' | 'rose' }> = ({ title, runners, accent }) => {
   const bgColors = {
     indigo: 'bg-indigo-50 border-indigo-100 text-indigo-900',
     rose: 'bg-rose-50 border-rose-100 text-rose-900'
-  };
-  const badgeColors = {
-    indigo: 'bg-indigo-600 text-white',
-    rose: 'bg-rose-600 text-white'
   };
 
   return (
@@ -328,11 +324,6 @@ const PodiumBlock: React.FC<{ title: string, runners: RenderReadyResult[], accen
             </div>
           </div>
         ))}
-        {runners.length === 0 && (
-          <div className="py-12 text-center border-2 border-dashed border-slate-200 rounded-[2rem]">
-            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Auncun temps enregistré</p>
-          </div>
-        )}
       </div>
     </div>
   );
