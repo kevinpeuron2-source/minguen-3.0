@@ -31,6 +31,7 @@ export interface Participant {
   gender: string;
   category: string;
   club?: string;
+  city?: string; // Ajout de la ville
   raceId: string;
   status: ParticipantStatus;
   startTime?: number;
@@ -59,7 +60,7 @@ export interface Race {
 
 /**
  * Interface Maîtresse : RenderReadyResult
- * Objet aplati prêt pour le DOM et l'Export Excel (Zéro calcul en vue)
+ * Objet aplati prêt pour le DOM et l'Export Excel
  */
 export interface RenderReadyResult {
   id: string;
@@ -70,15 +71,19 @@ export interface RenderReadyResult {
   category: string;
   gender: string;
   club: string;
+  city: string; // Ajout de la ville
   status: ParticipantStatus;
   progress: number; // 0-100
   rank: number;
+  rankGender: number; // Rang par sexe
+  rankCategory: number; // Rang par catégorie
   netTimeMs: number;
   displayTime: string; // HH:mm:ss.SS
   displaySpeed: string; // XX.XX km/h
   lastCheckpointName: string;
   passedCheckpointsCount: number;
   lastTimestamp: number;
+  segmentTimes: Record<string, string>; // Temps par tronçon (ex: "Départ - CP1": "00:12:04")
 }
 
 export interface RaceStats {
@@ -88,7 +93,6 @@ export interface RaceStats {
   onTrackCount: number;
 }
 
-// Fix: Added missing GlobalCombinedPost interface to resolve import errors in views
 export interface GlobalCombinedPost {
   id: string;
   name: string;
@@ -100,7 +104,6 @@ export interface GlobalCombinedPost {
   }[];
 }
 
-// Fix: Added missing MarshalPresence interface to resolve import errors in views
 export interface MarshalPresence {
   id: string;
   name: string;

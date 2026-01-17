@@ -36,23 +36,54 @@ export const useRaceKernel = (selectedRaceId: string) => {
     const activeRace = races.find(r => r.id === selectedRaceId);
     if (!activeRace) return [];
 
-    const mandatoryIds = new Set(activeRace.checkpoints.filter(cp => cp.isMandatory).map(cp => cp.id));
+    const mandatoryCps = activeRace.checkpoints.filter(cp => cp.isMandatory);
+    const mandatoryIds = new Set(mandatoryCps.map(cp => cp.id));
     mandatoryIds.add('finish');
     const totalMandatory = mandatoryIds.size;
 
-    const results: RenderReadyResult[] = participants
+    // Prépare les points pour le calcul des tronçons
+    const checkpointsOrdered = [...activeRace.checkpoints].sort((a, b) => a.distance - b.distance);
+    const pointsSequence = [
+      { id: 'start', name: 'Départ' },
+      ...checkpointsOrdered,
+      { id: 'finish', name: 'Arrivée' }
+    ];
+
+    const baseResults: RenderReadyResult[] = participants
       .filter(p => p.raceId === selectedRaceId)
       .map(p => {
-        const pPassages = passages.filter(pas => pas.participantId === p.id);
+        const pPassages = passages
+          .filter(pas => pas.participantId === p.id)
+          .sort((a, b) => a.timestamp - b.timestamp);
+        
         const lastPassage = pPassages[pPassages.length - 1];
         const isFinished = pPassages.some(pas => pas.checkpointId === 'finish');
-        
-        // Calcul progression
         const passedMandatory = pPassages.filter(pas => mandatoryIds.has(pas.checkpointId)).length;
         const progress = isFinished ? 100 : (passedMandatory / totalMandatory) * 100;
         
         const netTimeMs = lastPassage?.netTime || 0;
         const lastTimestamp = lastPassage?.timestamp || 0;
+
+        // Calcul des Tronçons (Segment Times)
+        const segmentTimes: Record<string, string> = {};
+        let lastPointTime = p.startTime || activeRace.startTime || 0;
+
+        pointsSequence.forEach((point, idx) => {
+          if (idx === 0) return; // Skip Départ as origin
+          
+          const passageAtPoint = pPassages.find(pas => pas.checkpointId === point.id);
+          const prevPointName = pointsSequence[idx-1].name;
+          const label = `${prevPointName} → ${point.name}`;
+
+          if (passageAtPoint) {
+            const currentAbsTime = passageAtPoint.timestamp;
+            const segmentDuration = currentAbsTime - lastPointTime;
+            segmentTimes[label] = formatMsToDisplay(segmentDuration).split('.')[0];
+            lastPointTime = currentAbsTime;
+          } else {
+            segmentTimes[label] = "--:--:--";
+          }
+        });
 
         return {
           id: p.id,
@@ -63,29 +94,53 @@ export const useRaceKernel = (selectedRaceId: string) => {
           category: p.category,
           gender: p.gender,
           club: p.club || "Individuel",
+          city: p.city || "N/A",
           status: p.status,
           progress: Math.round(progress),
           rank: 0,
+          rankGender: 0,
+          rankCategory: 0,
           netTimeMs,
           displayTime: formatMsToDisplay(netTimeMs),
           displaySpeed: calculateSpeed(activeRace.distance, netTimeMs),
           lastCheckpointName: lastPassage?.checkpointName || "Départ",
           passedCheckpointsCount: passedMandatory,
-          lastTimestamp
+          lastTimestamp,
+          segmentTimes
         } as RenderReadyResult;
       });
 
-    // Algorithme de tri vectoriel : 
-    // 1. Plus grand nombre de CP validés d'abord
-    // 2. Si égalité, celui qui a le timestamp le plus faible au dernier CP validé
-    return results
-      .sort((a, b) => {
-        if (a.passedCheckpointsCount !== b.passedCheckpointsCount) {
-          return b.passedCheckpointsCount - a.passedCheckpointsCount;
+    // 1. Tri général
+    const sorted = baseResults.sort((a, b) => {
+      if (a.passedCheckpointsCount !== b.passedCheckpointsCount) {
+        return b.passedCheckpointsCount - a.passedCheckpointsCount;
+      }
+      return a.lastTimestamp - b.lastTimestamp;
+    }).map((item, index) => ({ ...item, rank: index + 1 }));
+
+    // 2. Rangs par Sexe
+    const genders = ['M', 'F'];
+    genders.forEach(g => {
+      let gRank = 1;
+      sorted.forEach(item => {
+        if (item.gender === g) {
+          item.rankGender = gRank++;
         }
-        return a.lastTimestamp - b.lastTimestamp;
-      })
-      .map((item, index) => ({ ...item, rank: index + 1 }));
+      });
+    });
+
+    // 3. Rangs par Catégorie
+    const cats = Array.from(new Set(sorted.map(s => s.category)));
+    cats.forEach(c => {
+      let cRank = 1;
+      sorted.forEach(item => {
+        if (item.category === c) {
+          item.rankCategory = cRank++;
+        }
+      });
+    });
+
+    return sorted;
   }, [races, participants, passages, selectedRaceId]);
 
   const stats = useMemo<RaceStats>(() => {

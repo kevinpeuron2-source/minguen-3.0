@@ -1,129 +1,136 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
-import { Race, Participant, Passage, RenderReadyResult, ParticipantStatus } from '../types';
-import { Trophy, Printer, FileSpreadsheet, Filter, ChevronDown, ChevronUp, Activity, MapPin, Search } from 'lucide-react';
-import { formatMsToDisplay, calculateSpeed } from '../utils/formatters';
+import React, { useState, useMemo } from 'react';
+import { useRaceKernel } from '../hooks/useRaceKernel';
 import { generateResultsCSV } from '../services/exportEngine';
+import { 
+  Trophy, 
+  FileSpreadsheet, 
+  Printer, 
+  Filter, 
+  ChevronDown, 
+  ChevronUp, 
+  Medal, 
+  Settings2, 
+  User, 
+  MapPin, 
+  Building2,
+  Check,
+  TrendingUp,
+  Activity
+} from 'lucide-react';
+import { RenderReadyResult, ParticipantStatus } from '../types';
 
 const ResultsView: React.FC = () => {
-  const [races, setRaces] = useState<Race[]>([]);
   const [selectedRaceId, setSelectedRaceId] = useState('');
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [allPassages, setAllPassages] = useState<Passage[]>([]);
   const [expandedBibs, setExpandedBibs] = useState<string[]>([]);
-  
-  const [viewMode, setViewMode] = useState<'all' | 'scratch' | 'category' | 'podium'>('all');
+  const [viewMode, setViewMode] = useState<'all' | 'category' | 'podium'>('all');
   const [selectedCat, setSelectedCat] = useState('all');
 
-  useEffect(() => {
-    onSnapshot(collection(db, 'races'), snap => {
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Race));
-      setRaces(list);
-      if (list.length > 0 && !selectedRaceId) setSelectedRaceId(list[0].id);
-    });
-  }, []);
+  // Sélecteur de colonnes dynamique
+  const [visibleCols, setVisibleCols] = useState({
+    rank: true,
+    rankGender: true,
+    rankCategory: true,
+    bib: true,
+    name: true,
+    category: true,
+    gender: true,
+    club: true,
+    city: true,
+    time: true,
+    speed: true,
+    segments: false
+  });
 
-  useEffect(() => {
-    if (!selectedRaceId) return;
-    onSnapshot(query(collection(db, 'participants'), where('raceId', '==', selectedRaceId)), snap => {
-      setParticipants(snap.docs.map(d => ({ id: d.id, ...d.data() } as Participant)));
-    });
-    onSnapshot(query(collection(db, 'passages'), orderBy('timestamp', 'asc')), snap => {
-      setAllPassages(snap.docs.map(d => ({ id: d.id, ...d.data() } as Passage)));
-    });
-  }, [selectedRaceId]);
+  const { kernelResults, races } = useRaceKernel(selectedRaceId);
+
+  // Auto-sélection
+  if (!selectedRaceId && races.length > 0) {
+    setSelectedRaceId(races[0].id);
+  }
 
   const activeRace = races.find(r => r.id === selectedRaceId);
-  const categories = useMemo(() => Array.from(new Set(participants.map(p => p.category))), [participants]);
+  const categories = useMemo(() => Array.from(new Set(kernelResults.map(p => p.category))), [kernelResults]);
 
-  // Correction TS7034: Typage strict RenderReadyResult[]
-  const processedResults = useMemo<RenderReadyResult[]>(() => {
-    if (!activeRace) return [];
-
-    const results: RenderReadyResult[] = allPassages
-      .filter(p => p.checkpointId === 'finish' && participants.some(part => part.id === p.participantId))
-      .map((p) => {
-        const participant = participants.find(part => part.id === p.participantId);
-        if (!participant) return null;
-        
-        return {
-          id: participant.id,
-          bib: participant.bib,
-          fullName: `${participant.lastName.toUpperCase()} ${participant.firstName}`,
-          firstName: participant.firstName,
-          lastName: participant.lastName,
-          category: participant.category,
-          gender: participant.gender,
-          club: participant.club || 'Individuel',
-          status: participant.status,
-          netTimeMs: p.netTime,
-          displayTime: formatMsToDisplay(p.netTime),
-          displaySpeed: calculateSpeed(activeRace.distance, p.netTime),
-          lastCheckpointName: 'ARRIVÉE',
-          rank: 0,
-          progress: 100
-        } as RenderReadyResult;
-      })
-      .filter((r): r is RenderReadyResult => r !== null)
-      .sort((a, b) => a.netTimeMs - b.netTimeMs)
-      .map((item, index) => ({ ...item, rank: index + 1 }));
-
-    let filtered = results;
+  // Résultats filtrés pour le tableau
+  const displayResults = useMemo(() => {
+    let filtered = kernelResults.filter(r => r.status === ParticipantStatus.FINISHED);
     if (viewMode === 'category' && selectedCat !== 'all') {
-      filtered = results.filter(f => f.category === selectedCat);
+      filtered = filtered.filter(f => f.category === selectedCat);
     } else if (viewMode === 'podium') {
-      filtered = results.slice(0, 3);
+      filtered = filtered.slice(0, 3);
     }
-
     return filtered;
-  }, [allPassages, participants, activeRace, viewMode, selectedCat]);
+  }, [kernelResults, viewMode, selectedCat]);
+
+  // Podiums Top 4
+  const podiumH = useMemo(() => kernelResults.filter(r => r.gender === 'M' && r.status === ParticipantStatus.FINISHED).slice(0, 4), [kernelResults]);
+  const podiumF = useMemo(() => kernelResults.filter(r => r.gender === 'F' && r.status === ParticipantStatus.FINISHED).slice(0, 4), [kernelResults]);
 
   const toggleExpand = (bib: string) => {
     setExpandedBibs(prev => prev.includes(bib) ? prev.filter(b => b !== bib) : [...prev, bib]);
   };
 
+  const toggleCol = (key: keyof typeof visibleCols) => {
+    setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   return (
-    <div className="space-y-8 pb-20">
-      {/* Header fixe et moderne */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-soft">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Tableau des Leaders</h1>
-          <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest mt-1">Édition & Export des résultats officiels</p>
+    <div className="space-y-12 pb-24 animate-in fade-in duration-500">
+      {/* Header moderne */}
+      <header className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-soft flex flex-col md:flex-row justify-between items-center gap-8">
+        <div className="flex items-center gap-6">
+          <div className="bg-indigo-600 p-4 rounded-3xl shadow-xl shadow-indigo-100">
+            <Trophy size={32} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Palmarès Officiel</h1>
+            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest mt-1">Homologation des temps et tronçons</p>
+          </div>
         </div>
-        <div className="flex gap-3 w-full md:w-auto">
-          <button 
-            onClick={() => generateResultsCSV(processedResults, activeRace?.name || 'Resultats')} 
-            className="flex-1 md:flex-none bg-white border-2 border-slate-100 px-6 py-3 rounded-2xl font-black text-xs uppercase text-slate-600 flex items-center justify-center gap-3 hover:bg-slate-50 transition-all shadow-sm"
+        <div className="flex gap-4 w-full md:w-auto">
+          <select 
+            className="flex-1 md:w-64 bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-black text-sm outline-none focus:ring-4 focus:ring-indigo-50 cursor-pointer transition-all"
+            value={selectedRaceId}
+            onChange={e => setSelectedRaceId(e.target.value)}
           >
-            <FileSpreadsheet size={18} className="text-emerald-500" /> Export CSV
-          </button>
-          <button onClick={() => window.print()} className="flex-1 md:flex-none bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-3 shadow-lg shadow-indigo-100 hover:scale-105 transition-transform">
-            <Printer size={18} /> Imprimer
+            {races.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
+          <button 
+            onClick={() => generateResultsCSV(kernelResults, activeRace?.name || 'Resultats')}
+            className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase flex items-center gap-3 shadow-lg hover:bg-indigo-600 transition-all active:scale-95"
+          >
+            <FileSpreadsheet size={18} /> CSV
           </button>
         </div>
       </header>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Panneau de configuration épuré */}
-        <aside className="lg:w-80 space-y-6">
-          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-soft space-y-8">
+      {/* Podiums Top 4 Style Dashboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <PodiumBlock title="Podium Hommes" runners={podiumH} accent="indigo" />
+        <PodiumBlock title="Podium Femmes" runners={podiumF} accent="rose" />
+      </div>
+
+      <div className="flex flex-col xl:flex-row gap-10">
+        {/* Panneau de configuration Latéral */}
+        <aside className="xl:w-80 space-y-8">
+          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-soft space-y-10">
+            {/* Filtres de Vue */}
             <div>
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Filter size={14} /> Filtres d'affichage
+                <Filter size={14} /> Filtres Rapides
               </h3>
               <div className="space-y-2">
-                {(['all', 'scratch', 'category', 'podium'] as const).map(mode => (
+                {(['all', 'category', 'podium'] as const).map(mode => (
                   <button 
                     key={mode}
                     onClick={() => setViewMode(mode)}
                     className={`w-full text-left px-5 py-3 rounded-xl font-bold text-sm transition-all ${
                       viewMode === mode 
-                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' 
+                        ? 'bg-indigo-600 text-white shadow-lg' 
                         : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
                     }`}
                   >
-                    {mode === 'all' ? 'Tous les classés' : mode === 'scratch' ? 'Classement Scratch' : mode === 'category' ? 'Par catégorie' : 'Top 3 Podium'}
+                    {mode === 'all' ? 'Classement Général' : mode === 'category' ? 'Par Catégorie' : 'Top 3 Overall'}
                   </button>
                 ))}
               </div>
@@ -131,95 +138,133 @@ const ResultsView: React.FC = () => {
 
             {viewMode === 'category' && (
               <div className="animate-in slide-in-from-top-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Choisir Catégorie</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Catégorie cible</label>
                 <select 
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-sm outline-none focus:ring-4 focus:ring-indigo-50"
                   value={selectedCat}
                   onChange={e => setSelectedCat(e.target.value)}
                 >
-                  <option value="all">Toutes les catégories</option>
+                  <option value="all">Toutes</option>
                   {categories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
             )}
+
+            {/* Sélecteur de Colonnes */}
+            <div>
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <Settings2 size={14} /> Colonnes dynamiques
+              </h3>
+              <div className="grid grid-cols-1 gap-2">
+                {Object.entries(visibleCols).map(([key, isVisible]) => (
+                  <label 
+                    key={key} 
+                    className={`flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all cursor-pointer ${
+                      isVisible ? 'border-indigo-100 bg-indigo-50/50 text-indigo-700' : 'border-slate-50 text-slate-300 opacity-50'
+                    }`}
+                  >
+                    <span className="text-[10px] font-black uppercase tracking-tighter">
+                      {key === 'rank' ? 'Rang' : 
+                       key === 'rankGender' ? 'Rang H/F' : 
+                       key === 'rankCategory' ? 'Rang Caté' : 
+                       key === 'bib' ? 'Dossard' : 
+                       key === 'name' ? 'Athlète' : 
+                       key === 'category' ? 'Catégorie' : 
+                       key === 'gender' ? 'Sexe' : 
+                       key === 'club' ? 'Club' : 
+                       key === 'city' ? 'Ville' : 
+                       key === 'time' ? 'Temps' : 
+                       key === 'speed' ? 'Vitesse' : 'Tronçons'}
+                    </span>
+                    <input 
+                      type="checkbox" 
+                      className="hidden" 
+                      checked={isVisible} 
+                      onChange={() => toggleCol(key as keyof typeof visibleCols)} 
+                    />
+                    {isVisible && <Check size={14} />}
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
         </aside>
 
-        {/* Table des résultats épurée */}
+        {/* Tableau des Résultats */}
         <div className="flex-1 bg-white rounded-[3rem] border border-slate-200 shadow-soft overflow-hidden">
-          <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-             <select 
-              className="text-xl font-black text-slate-900 bg-transparent outline-none cursor-pointer border-none"
-              value={selectedRaceId}
-              onChange={e => setSelectedRaceId(e.target.value)}
-             >
-               {races.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-             </select>
-             <div className="flex items-center gap-2 text-slate-500 font-bold text-xs uppercase">
-               <Trophy size={18} className="text-amber-500" /> {processedResults.length} Athlètes classés
-             </div>
-          </div>
-
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white border-b border-slate-100">
+                <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50">
                   <th className="py-6 px-4"></th>
-                  <th className="py-6 px-4">Rang</th>
-                  <th className="py-6 px-4">Dos.</th>
-                  <th className="py-6 px-6">Concurrent</th>
-                  <th className="py-6 px-6">Catégorie</th>
-                  <th className="py-6 px-6 text-right">Temps</th>
-                  <th className="py-6 px-6 text-right">Vitesse</th>
+                  {visibleCols.rank && <th className="py-6 px-4">Rang</th>}
+                  {visibleCols.rankGender && <th className="py-6 px-4">H/F</th>}
+                  {visibleCols.rankCategory && <th className="py-6 px-4">Caté</th>}
+                  {visibleCols.bib && <th className="py-6 px-4">Dos.</th>}
+                  {visibleCols.name && <th className="py-6 px-6">Nom</th>}
+                  {visibleCols.category && <th className="py-6 px-4">Caté.</th>}
+                  {visibleCols.gender && <th className="py-6 px-4">Sexe</th>}
+                  {visibleCols.club && <th className="py-6 px-6">Club</th>}
+                  {visibleCols.city && <th className="py-6 px-6">Ville</th>}
+                  {visibleCols.time && <th className="py-6 px-6 text-right">Temps</th>}
+                  {visibleCols.speed && <th className="py-6 px-6 text-right">Vitesse</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {processedResults.map((f, i) => {
-                  const isExpanded = expandedBibs.includes(f.bib);
+                {displayResults.map((r) => {
+                  const isExpanded = expandedBibs.includes(r.bib);
                   return (
-                    <React.Fragment key={f.id}>
+                    <React.Fragment key={r.id}>
                       <tr 
-                        className={`group cursor-pointer hover:bg-slate-50 transition-colors ${isExpanded ? 'bg-indigo-50/20' : ''}`}
-                        onClick={() => toggleExpand(f.bib)}
+                        className={`group cursor-pointer hover:bg-indigo-50/20 transition-colors ${isExpanded ? 'bg-indigo-50/30' : ''}`}
+                        onClick={() => toggleExpand(r.bib)}
                       >
                         <td className="py-6 px-4 text-center">
                           {isExpanded ? <ChevronUp size={16} className="text-indigo-600 mx-auto" /> : <ChevronDown size={16} className="text-slate-200 mx-auto" />}
                         </td>
-                        <td className="py-6 px-4">
-                          <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${
-                            i < 3 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-slate-100 text-slate-400'
-                          }`}>
-                            {i + 1}
-                          </span>
-                        </td>
-                        <td className="py-6 px-4 font-black mono text-indigo-600 text-lg">#{f.bib}</td>
-                        <td className="py-6 px-6">
-                          <div className="font-black text-slate-900 uppercase leading-none mb-1">{f.lastName} {f.firstName}</div>
-                          <div className="text-[10px] font-bold text-slate-400 uppercase">{f.club}</div>
-                        </td>
-                        <td className="py-6 px-6">
-                          <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-3 py-1.5 rounded-lg uppercase">{f.category}</span>
-                        </td>
-                        <td className="py-6 px-6 font-black mono text-slate-900 text-right text-lg">{f.displayTime}</td>
-                        <td className="py-6 px-6 font-black text-indigo-600 mono text-sm text-right">{f.displaySpeed} <span className="text-[10px] opacity-40">km/h</span></td>
+                        {visibleCols.rank && (
+                          <td className="py-6 px-4 font-black">
+                            <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${r.rank <= 3 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
+                              {r.rank}
+                            </span>
+                          </td>
+                        )}
+                        {visibleCols.rankGender && (
+                          <td className="py-6 px-4">
+                            <span className="text-[11px] font-black text-slate-400">#{r.rankGender}</span>
+                          </td>
+                        )}
+                        {visibleCols.rankCategory && (
+                          <td className="py-6 px-4">
+                             <span className="text-[11px] font-black text-slate-400">#{r.rankCategory}</span>
+                          </td>
+                        )}
+                        {visibleCols.bib && <td className="py-6 px-4 font-black mono text-indigo-600 text-lg">#{r.bib}</td>}
+                        {visibleCols.name && (
+                          <td className="py-6 px-6">
+                            <div className="font-black text-slate-900 uppercase tracking-tight">{r.fullName}</div>
+                          </td>
+                        )}
+                        {visibleCols.category && <td className="py-6 px-4 text-[11px] font-black text-slate-400">{r.category}</td>}
+                        {visibleCols.gender && <td className="py-6 px-4 font-black text-slate-400">{r.gender}</td>}
+                        {visibleCols.club && <td className="py-6 px-6 text-xs font-bold text-slate-400 uppercase truncate max-w-[120px]">{r.club}</td>}
+                        {visibleCols.city && <td className="py-6 px-6 text-xs font-bold text-slate-400 uppercase">{r.city}</td>}
+                        {visibleCols.time && <td className="py-6 px-6 font-black mono text-slate-900 text-right text-lg">{r.displayTime}</td>}
+                        {visibleCols.speed && <td className="py-6 px-6 font-black text-indigo-600 mono text-sm text-right">{r.displaySpeed} <span className="text-[10px] opacity-40">km/h</span></td>}
                       </tr>
                       {isExpanded && (
                         <tr className="bg-slate-50/50">
-                          <td colSpan={7} className="px-12 py-10">
-                            <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between">
-                              <div className="flex items-center gap-6">
-                                <div className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl">
-                                  <MapPin size={24} />
+                          <td colSpan={12} className="px-10 py-10">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-4">
+                              {Object.entries(r.segmentTimes).map(([label, time]) => (
+                                <div key={label} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm group hover:border-indigo-500 transition-all">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{label}</span>
+                                    <Activity size={14} className="text-slate-200" />
+                                  </div>
+                                  <p className="text-xl font-black text-slate-900 mono">{time}</p>
                                 </div>
-                                <div>
-                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status Final</p>
-                                  <p className="font-black text-slate-900 uppercase">Parcours validé à 100%</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Signature Chrono</p>
-                                <p className="text-xs font-mono text-slate-300">UID-{f.id.slice(0, 8)}</p>
-                              </div>
+                              ))}
                             </div>
                           </td>
                         </tr>
@@ -229,17 +274,65 @@ const ResultsView: React.FC = () => {
                 })}
               </tbody>
             </table>
-
-            {processedResults.length === 0 && (
-              <div className="py-40 text-center flex flex-col items-center justify-center gap-4">
-                <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200">
-                   <Activity size={40} />
-                </div>
-                <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">En attente des premières arrivées officielles</p>
+            {displayResults.length === 0 && (
+              <div className="py-32 text-center flex flex-col items-center justify-center gap-4 bg-slate-50/50">
+                <Trophy size={48} className="text-slate-200" />
+                <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">En attente des premières homologations</p>
               </div>
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Composant Interne pour les Blocs Podium
+const PodiumBlock: React.FC<{ title: string, runners: RenderReadyResult[], accent: 'indigo' | 'rose' }> = ({ title, runners, accent }) => {
+  const bgColors = {
+    indigo: 'bg-indigo-50 border-indigo-100 text-indigo-900',
+    rose: 'bg-rose-50 border-rose-100 text-rose-900'
+  };
+  const badgeColors = {
+    indigo: 'bg-indigo-600 text-white',
+    rose: 'bg-rose-600 text-white'
+  };
+
+  return (
+    <div className={`p-8 rounded-[3rem] border-2 shadow-soft relative overflow-hidden ${bgColors[accent]}`}>
+      <div className="absolute top-0 right-0 p-6 opacity-5">
+        <Medal size={80} />
+      </div>
+      <h2 className="text-xl font-black uppercase tracking-tight mb-8 flex items-center gap-3">
+        <Medal size={24} /> {title}
+      </h2>
+      <div className="space-y-4">
+        {runners.map((runner, i) => (
+          <div key={runner.id} className="bg-white p-5 rounded-3xl flex items-center justify-between shadow-sm border border-black/5 hover:translate-x-2 transition-transform">
+            <div className="flex items-center gap-5">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-lg ${
+                i === 0 ? 'bg-amber-100 text-amber-600' : 
+                i === 1 ? 'bg-slate-100 text-slate-500' : 
+                i === 2 ? 'bg-orange-100 text-orange-600' : 'bg-slate-50 text-slate-400'
+              }`}>
+                {i + 1}
+              </div>
+              <div>
+                <p className="font-black uppercase tracking-tight text-slate-900 leading-none">{runner.fullName}</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">{runner.club} • {runner.city}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="font-black mono text-slate-900 text-lg leading-none">{runner.displayTime.split('.')[0]}</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase mt-1 tracking-widest">{runner.category}</p>
+            </div>
+          </div>
+        ))}
+        {runners.length === 0 && (
+          <div className="py-12 text-center border-2 border-dashed border-slate-200 rounded-[2rem]">
+            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Auncun temps enregistré</p>
+          </div>
+        )}
       </div>
     </div>
   );

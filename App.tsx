@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { DatabaseProvider } from './context/DatabaseContext';
@@ -13,16 +12,20 @@ import SignaleurView from './views/SignaleurView';
 import LiveView from './views/LiveView';
 import MarshalInputView from './views/MarshalInputView';
 import RemoteFinishView from './views/RemoteFinishView';
+import FinishTerminalView from './views/FinishTerminalView';
+import SpeakerView from './views/SpeakerView';
 
 const App: React.FC = () => {
   return (
     <DatabaseProvider>
       <Router>
         <Routes>
-          {/* Routes publiques et autonomes */}
+          {/* Routes publiques, autonomes et outils plein écran */}
           <Route path="/live" element={<LiveView />} />
           <Route path="/signaleur-terrain" element={<MarshalInputView />} />
           <Route path="/remote-finish" element={<RemoteFinishView />} />
+          <Route path="/finish-terminal" element={<FinishTerminalView />} />
+          <Route path="/speaker-tool" element={<SpeakerView />} />
           
           {/* Routes administration */}
           <Route path="/*" element={

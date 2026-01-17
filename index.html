@@ -27,6 +27,21 @@
             },
             boxShadow: {
               'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            },
+            animation: {
+              'flash-arrival': 'flash-arrival 3s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+              'scroll-tv': 'scroll-tv 60s linear infinite',
+            },
+            keyframes: {
+              'flash-arrival': {
+                '0%': { backgroundColor: 'rgba(79, 70, 229, 0.3)' },
+                '50%': { backgroundColor: 'rgba(16, 185, 129, 0.2)' },
+                '100%': { backgroundColor: 'transparent' },
+              },
+              'scroll-tv': {
+                '0%': { transform: 'translateY(0)' },
+                '100%': { transform: 'translateY(-50%)' },
+              }
             }
           }
         }
@@ -68,6 +83,17 @@
             font-size: 0.75rem;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Animation de flash pour passage point */
+        .row-flash {
+          animation: flash-arrival 3s ease-out;
+        }
+
+        /* Mode TV Autoscroll */
+        .tv-scroll-container {
+          overflow: hidden;
+          height: 80vh;
+        }
     </style>
 <script type="importmap">
 {
