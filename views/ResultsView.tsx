@@ -1,30 +1,39 @@
 import React, { useState, useMemo } from 'react';
 import { useRaceKernel } from '../hooks/useRaceKernel';
 import { generateResultsCSV } from '../services/exportEngine';
+import { db } from '../firebase';
+import { collection, doc, writeBatch, getDocs, query, where } from 'firebase/firestore';
 import { 
   Trophy, 
   FileSpreadsheet, 
-  Printer, 
   Filter, 
   ChevronDown, 
   ChevronUp, 
   Medal, 
   Settings2, 
-  User, 
-  MapPin, 
-  Building2,
   Check,
   TrendingUp,
-  Activity,
-  Wind
+  Wind,
+  GitCompare,
+  X,
+  RotateCw,
+  Info
 } from 'lucide-react';
-import { RenderReadyResult, ParticipantStatus } from '../types';
+import { RenderReadyResult, ParticipantStatus, Passage } from '../types';
+import { useDatabase } from '../context/DatabaseContext';
 
 const ResultsView: React.FC = () => {
+  const { isAdmin } = useDatabase();
   const [selectedRaceId, setSelectedRaceId] = useState('');
   const [expandedBibs, setExpandedBibs] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'all' | 'category' | 'podium'>('all');
   const [selectedCat, setSelectedCat] = useState('all');
+
+  // States pour l'ajustement Admin
+  const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [adjustingRunner, setAdjustingRunner] = useState<RenderReadyResult | null>(null);
+  const [refBib, setRefBib] = useState('');
+  const [isAdjusting, setIsAdjusting] = useState(false);
 
   const [visibleCols, setVisibleCols] = useState({
     rank: true,
@@ -69,6 +78,66 @@ const ResultsView: React.FC = () => {
 
   const toggleCol = (key: keyof typeof visibleCols) => {
     setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleAdjustRanking = async () => {
+    if (!adjustingRunner || !refBib || isAdjusting) return;
+    setIsAdjusting(true);
+
+    try {
+      // 1. Trouver le participant de référence
+      const refRunner = kernelResults.find(r => r.bib === refBib);
+      if (!refRunner) {
+        alert(`Le dossard ${refBib} est introuvable.`);
+        setIsAdjusting(false);
+        return;
+      }
+
+      // 2. Récupérer les passages du dossard de référence
+      const refPassagesSnap = await getDocs(query(collection(db, 'passages'), where('participantId', '==', refRunner.id)));
+      if (refPassagesSnap.empty) {
+        alert(`Le dossard ${refBib} n'a aucun temps enregistré.`);
+        setIsAdjusting(false);
+        return;
+      }
+
+      // 3. Récupérer et supprimer les anciens passages du participant cible
+      const targetPassagesSnap = await getDocs(query(collection(db, 'passages'), where('participantId', '==', adjustingRunner.id)));
+      
+      const batch = writeBatch(db);
+      targetPassagesSnap.forEach(d => batch.delete(d.ref));
+
+      // 4. Copier les passages avec décalage de 100ms sur le temps final
+      const startTime = activeRace?.startTime || Date.now();
+
+      refPassagesSnap.forEach(refDoc => {
+        const refData = refDoc.data() as Passage;
+        const newPassageRef = doc(collection(db, 'passages'));
+        
+        const isFinish = refData.checkpointId === 'finish';
+        const newTimestamp = isFinish ? refData.timestamp + 100 : refData.timestamp;
+        const newNetTime = newTimestamp - startTime;
+
+        batch.set(newPassageRef, {
+          ...refData,
+          participantId: adjustingRunner.id,
+          bib: adjustingRunner.bib,
+          timestamp: newTimestamp,
+          netTime: newNetTime
+        });
+      });
+
+      await batch.commit();
+      
+      alert(`Dossard ${adjustingRunner.bib} repositionné derrière le ${refBib} (+0.1s). Classement mis à jour.`);
+      setShowAdjustModal(false);
+      setAdjustingRunner(null);
+      setRefBib('');
+    } catch (err: any) {
+      alert("Erreur lors de l'ajustement : " + err.message);
+    } finally {
+      setIsAdjusting(false);
+    }
   };
 
   return (
@@ -199,6 +268,7 @@ const ResultsView: React.FC = () => {
                   {visibleCols.city && <th className="py-6 px-6">Ville</th>}
                   {visibleCols.time && <th className="py-6 px-6 text-right">Temps</th>}
                   {visibleCols.speed && <th className="py-6 px-6 text-right">Vitesse</th>}
+                  {isAdmin && <th className="py-6 px-4 text-center">Admin</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -242,10 +312,21 @@ const ResultsView: React.FC = () => {
                         {visibleCols.city && <td className="py-6 px-6 text-xs font-bold text-slate-400 uppercase">{r.city}</td>}
                         {visibleCols.time && <td className="py-6 px-6 font-black mono text-slate-900 text-right text-lg">{r.displayTime}</td>}
                         {visibleCols.speed && <td className="py-6 px-6 font-black text-indigo-600 mono text-sm text-right">{r.displaySpeed} <span className="text-[10px] opacity-40">km/h</span></td>}
+                        {isAdmin && (
+                          <td className="py-6 px-4 text-center">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setAdjustingRunner(r); setRefBib(''); setShowAdjustModal(true); }}
+                              className="p-3 bg-white text-indigo-500 hover:bg-indigo-600 hover:text-white border border-indigo-100 rounded-xl transition-all shadow-sm"
+                              title="Ajuster le rang"
+                            >
+                              <GitCompare size={18} />
+                            </button>
+                          </td>
+                        )}
                       </tr>
                       {isExpanded && (
                         <tr className="bg-slate-50/50">
-                          <td colSpan={12} className="px-10 py-10">
+                          <td colSpan={13} className="px-10 py-10">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-top-4">
                               {r.splits.map((split, idx) => (
                                 <div key={idx} className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm group hover:border-indigo-500 transition-all relative overflow-hidden">
@@ -284,6 +365,60 @@ const ResultsView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal Ajustement Rang Admin */}
+      {showAdjustModal && adjustingRunner && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-[150] flex items-center justify-center p-6">
+          <div className="bg-white rounded-[3.5rem] p-12 w-full max-w-lg shadow-2xl animate-in zoom-in duration-200">
+            <div className="flex justify-between items-start mb-10">
+              <div>
+                <h2 className="text-3xl font-black text-slate-900 uppercase flex items-center gap-4">
+                  <GitCompare className="text-indigo-600" size={32} /> Ajuster Classement
+                </h2>
+                <p className="text-slate-500 font-bold text-xs uppercase mt-2">Cible : #{adjustingRunner.bib} {adjustingRunner.lastName}</p>
+              </div>
+              <button onClick={() => setShowAdjustModal(false)} className="p-4 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-full transition-colors"><X size={32}/></button>
+            </div>
+
+            <div className="space-y-8">
+              <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-[2rem] flex items-start gap-4">
+                <Info size={24} className="text-indigo-600 mt-1 shrink-0" />
+                <p className="text-[11px] font-bold text-indigo-800 leading-relaxed uppercase">
+                  Recaler derrière un autre dossard : le dossard {adjustingRunner.bib} sera positionné à <strong>+0.1s</strong> du dossard de référence.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-2">Dossard de référence</label>
+                <input 
+                  type="text" 
+                  autoFocus
+                  className="w-full bg-slate-50 border-4 border-slate-100 rounded-[2rem] px-8 py-6 text-center text-6xl font-black text-indigo-600 outline-none focus:border-indigo-500 transition-all placeholder:text-slate-200"
+                  placeholder="00"
+                  value={refBib}
+                  onChange={e => setRefBib(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button 
+                  onClick={() => setShowAdjustModal(false)}
+                  className="flex-1 py-6 font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition-all"
+                >
+                  Annuler
+                </button>
+                <button 
+                  onClick={handleAdjustRanking} 
+                  disabled={!refBib || isAdjusting}
+                  className="flex-2 bg-indigo-600 text-white py-6 rounded-2xl font-black text-xl shadow-2xl shadow-indigo-100 flex items-center justify-center gap-4 active:scale-95 transition-all disabled:opacity-30 uppercase"
+                >
+                  {isAdjusting ? <RotateCw className="animate-spin" /> : 'Confirmer Recalage'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

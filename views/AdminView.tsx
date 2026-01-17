@@ -3,9 +3,10 @@ import { collection, writeBatch, getDocs, addDoc, doc, updateDoc, query, where }
 import { db } from '../firebase';
 import { Settings, ShieldAlert, Zap, AlertCircle, CheckCircle2, Trash2, RefreshCcw, Lock, ShieldCheck, Users } from 'lucide-react';
 import { RaceType, RaceStatus, ParticipantStatus, Race } from '../types';
+import { useDatabase } from '../context/DatabaseContext';
 
 const AdminView: React.FC = () => {
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const { isAdmin, setIsAdmin } = useDatabase();
   const [adminCode, setAdminCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [diagStatus, setDiagStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -14,7 +15,7 @@ const AdminView: React.FC = () => {
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (adminCode === '1805') {
-      setIsAdminAuthenticated(true);
+      setIsAdmin(true);
     } else {
       alert('Code administrateur incorrect');
     }
@@ -138,17 +139,17 @@ const AdminView: React.FC = () => {
     }
   };
 
-  if (!isAdminAuthenticated) {
+  if (!isAdmin) {
     return (
       <div className="h-[calc(100vh-10rem)] flex items-center justify-center p-6 animate-in fade-in duration-500">
         <div className="bg-white p-12 rounded-[3.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.04)] border border-slate-100 w-full max-w-md text-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full -mr-16 -mt-16"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full -mr-16 -mt-16 -z-10"></div>
           
           <div className="w-24 h-24 bg-slate-950 rounded-[2.2rem] flex items-center justify-center mx-auto mb-8 text-white shadow-2xl relative z-10">
             <Lock size={48} />
           </div>
           <h2 className="text-3xl font-black text-slate-900 mb-2 uppercase tracking-tight">Accès Restreint</h2>
-          <p className="text-slate-400 mb-10 font-bold uppercase text-[10px] tracking-widest">Zone de maintenance Minguen Chrono</p>
+          <p className="text-slate-400 mb-10 font-bold uppercase text-[10px] tracking-widest">Le QG - Zone de maintenance</p>
           
           <form onSubmit={handleAdminLogin} className="space-y-6 relative z-10">
             <input 
@@ -172,11 +173,11 @@ const AdminView: React.FC = () => {
     <div className="max-w-5xl mx-auto space-y-10 pb-20 animate-in fade-in duration-500">
       <header className="flex justify-between items-end">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tight">Administration</h1>
+          <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tight">Le QG - Administration</h1>
           <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-2">Maintenance système et outils de test</p>
         </div>
         <button 
-          onClick={() => setIsAdminAuthenticated(false)} 
+          onClick={() => setIsAdmin(false)} 
           className="flex items-center gap-3 px-6 py-3 bg-slate-100 text-slate-500 font-black text-xs uppercase rounded-xl hover:bg-slate-200 transition-colors"
         >
           <Lock size={16} /> Verrouiller
@@ -199,7 +200,7 @@ const AdminView: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <h3 className="font-black text-blue-700 text-xl uppercase tracking-tight">Lancer Simulation</h3>
-                  <p className="text-sm text-blue-500 font-medium">Génère des temps pour vos <span className="font-black">vrais inscrits</span></p>
+                  <p className="text-sm text-blue-500 font-medium">Génère des temps pour vos <span className="font-black">vrais participants</span></p>
                 </div>
                 <Users className="text-blue-300 group-hover:scale-110 transition-transform" size={32} />
               </div>
@@ -263,7 +264,7 @@ const AdminView: React.FC = () => {
 
           <div className="p-8 rounded-[2.5rem] bg-red-50/50 border-2 border-red-100 space-y-6">
             <p className="text-xs font-bold text-red-800 leading-relaxed">
-              La réinitialisation supprimera <span className="font-black">tous les coureurs, tous les temps et toutes les courses</span>. Cette action est irréversible.
+              La réinitialisation supprimera <span className="font-black">tous les participants, tous les temps et toutes les courses</span>. Cette action est irréversible.
             </p>
             
             <div className="space-y-2">
