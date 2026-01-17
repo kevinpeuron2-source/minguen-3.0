@@ -12,7 +12,8 @@ import {
   ChevronRight,
   Zap,
   Activity,
-  ExternalLink
+  Monitor,
+  Gamepad2
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -86,6 +87,24 @@ const Sidebar: React.FC = () => {
 
       {/* Footer Links */}
       <div className="p-4 border-t border-slate-100 space-y-2">
+        <Link
+          to="/speaker"
+          className="flex items-center gap-4 px-3 py-3 rounded-xl text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all font-bold group overflow-hidden"
+        >
+          <Monitor size={22} className="shrink-0" />
+          <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+            Console Speaker
+          </span>
+        </Link>
+        <Link
+          to="/terminal"
+          className="flex items-center gap-4 px-3 py-3 rounded-xl text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition-all font-bold group overflow-hidden"
+        >
+          <Gamepad2 size={22} className="shrink-0" />
+          <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+            Terminal Arrivée
+          </span>
+        </Link>
         <Link
           to="/live"
           target="_blank"

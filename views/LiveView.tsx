@@ -1,4 +1,6 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
 import { useRaceKernel } from '../hooks/useRaceKernel';
 import { 
   Trophy, 
@@ -7,29 +9,34 @@ import {
   Zap,
   TrendingUp,
   Clock,
-  Navigation
+  Navigation,
+  ChevronRight,
+  Users
 } from 'lucide-react';
 import { ParticipantStatus, RenderReadyResult, Race } from '../types';
 
 const LiveView: React.FC = () => {
   const [genderFilter, setGenderFilter] = useState<'ALL' | 'M' | 'F'>('ALL');
   const [displayMode, setDisplayMode] = useState<'RANKING' | 'LIVE'>('RANKING');
+  const [races, setRaces] = useState<Race[]>([]);
   
-  // Le kernel charge tout ce qui est nécessaire. On filtre localement par course.
-  // Pour cette vue "Broadcast", on va afficher toutes les courses actives en colonnes.
-  const { kernelResults, races, isSyncing } = useRaceKernel('all_races_placeholder'); // Note: useRaceKernel logic might need tweak to handle multiple races if it doesn't already
+  // Écouter les courses pour savoir lesquelles afficher en colonnes
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'races'), (snap) => {
+      setRaces(snap.docs.map(d => ({ id: d.id, ...d.data() } as Race)));
+    });
+    return () => unsub();
+  }, []);
 
-  // Correction : useRaceKernel actuel prend un ID de course. Pour une vue multi-colonnes, 
-  // on va devoir itérer sur les races et appeler les données.
-  // Alternative simplifiée pour ce turn : on utilise le kernelResults global (filtré par raceId dans le rendu)
-  
-  const activeRaces = useMemo(() => races.filter(r => r.status !== 'READY'), [races]);
+  const activeRaces = useMemo(() => 
+    races.filter(r => r.status !== 'READY').sort((a, b) => a.distance - b.distance)
+  , [races]);
 
   return (
     <div className="fixed inset-0 bg-[#020617] text-white flex flex-col font-sans overflow-hidden select-none">
       
       {/* Broadcast Header */}
-      <header className="bg-slate-900 border-b border-white/5 p-8 flex justify-between items-center z-20 backdrop-blur-xl">
+      <header className="bg-slate-900 border-b border-white/5 p-8 flex justify-between items-center z-20 backdrop-blur-xl shrink-0">
         <div className="flex items-center gap-6">
           <div className="bg-indigo-600 p-4 rounded-[1.5rem] shadow-2xl shadow-indigo-600/20">
             <Zap size={32} className="text-white fill-white" />
@@ -42,7 +49,7 @@ const LiveView: React.FC = () => {
           </div>
         </div>
 
-        {/* Global Filters */}
+        {/* Global Controls */}
         <div className="flex items-center gap-10">
           <div className="flex bg-white/5 p-1.5 rounded-[1.2rem] border border-white/5">
              {(['RANKING', 'LIVE'] as const).map(mode => (
@@ -53,7 +60,7 @@ const LiveView: React.FC = () => {
                     displayMode === mode ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
-                  {mode === 'RANKING' ? 'Leaderboard' : 'Dernières Arrivées'}
+                  {mode === 'RANKING' ? 'Leaderboard' : 'Flux Direct'}
                 </button>
              ))}
           </div>
@@ -67,7 +74,7 @@ const LiveView: React.FC = () => {
                     genderFilter === g ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
-                  {g === 'ALL' ? 'Scratch' : g === 'M' ? 'Hommes' : 'Femmes'}
+                  {g === 'ALL' ? 'Tous' : g === 'M' ? 'Hommes' : 'Femmes'}
                 </button>
              ))}
           </div>
@@ -78,7 +85,7 @@ const LiveView: React.FC = () => {
               <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Status</p>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span className="text-sm font-black mono uppercase">Live Telemetry</span>
+                <span className="text-sm font-black mono uppercase">Connected</span>
               </div>
            </div>
         </div>
@@ -89,14 +96,13 @@ const LiveView: React.FC = () => {
         {activeRaces.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-6 opacity-20">
              <Activity size={80} />
-             <p className="text-2xl font-black uppercase tracking-[0.5em]">Waiting for active races...</p>
+             <p className="text-2xl font-black uppercase tracking-[0.5em]">En attente du départ des épreuves...</p>
           </div>
         ) : (
           activeRaces.map(race => (
             <RaceColumn 
               key={race.id} 
               race={race} 
-              results={kernelResults.filter(r => r.id.includes(race.id) || r.bib.length > 0)} // Note: Logic depends on how kernelResults is filtered. We'll assume the kernel provides all for now or is used per column.
               genderFilter={genderFilter}
               displayMode={displayMode}
             />
@@ -104,57 +110,71 @@ const LiveView: React.FC = () => {
         )}
       </main>
 
-      {/* Scrollable ticker or Footer */}
-      <footer className="bg-indigo-900 px-10 py-4 flex justify-between items-center">
-         <div className="flex items-center gap-4">
-           <div className="px-3 py-1 bg-white/10 rounded-md text-[9px] font-black uppercase tracking-widest">Ticker</div>
-           <p className="text-[11px] font-bold text-indigo-200 uppercase tracking-wide animate-pulse">
-             Bienvenue sur le live Minguen Chrono • Résultats officiels soumis à homologation • Suivez votre dossard en temps réel
-           </p>
+      {/* Broadcast Ticker Footer */}
+      <footer className="bg-indigo-950 px-10 py-4 flex justify-between items-center shrink-0">
+         <div className="flex items-center gap-4 overflow-hidden">
+           <div className="px-3 py-1 bg-white/10 rounded-md text-[9px] font-black uppercase tracking-widest text-indigo-300">Infos</div>
+           <div className="flex items-center gap-12 whitespace-nowrap animate-marquee">
+             <p className="text-[11px] font-bold text-white uppercase tracking-wide">
+               Résultats en direct • Temps soumis à homologation • Suivez votre dossard en temps réel sur minguen-chrono.web.app
+             </p>
+             <p className="text-[11px] font-bold text-white uppercase tracking-wide">
+               Prochaine épreuve : Trail des Cimes • 45km • Départ 08:30
+             </p>
+           </div>
          </div>
-         <p className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.3em]">Minguen OS 4.0 Pro Broadcast</p>
+         <p className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.3em] ml-10">Minguen OS 4.0 Pro Station</p>
       </footer>
+      
+      <style>{`
+        @keyframes marquee {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+        .animate-marquee {
+          animation: marquee 30s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };
 
 interface RaceColumnProps {
   race: Race;
-  results: RenderReadyResult[];
   genderFilter: 'ALL' | 'M' | 'F';
   displayMode: 'RANKING' | 'LIVE';
 }
 
-const RaceColumn: React.FC<RaceColumnProps> = ({ race, results, genderFilter, displayMode }) => {
-  // Filtrage des résultats pour cette colonne spécifique
+const RaceColumn: React.FC<RaceColumnProps> = ({ race, genderFilter, displayMode }) => {
+  const { kernelResults } = useRaceKernel(race.id);
+
   const columnData = useMemo(() => {
-    // Dans une implémentation réelle, le kernelResults contiendrait le raceId. 
-    // Ici on simule ou on s'adapte à la structure existante.
-    let data = results.filter(r => r.netTimeMs > 0); // Uniquement ceux ayant un temps
+    let data = [...kernelResults].filter(r => r.netTimeMs > 0 || r.status !== ParticipantStatus.REGISTERED);
     
     if (genderFilter !== 'ALL') {
       data = data.filter(r => r.gender === genderFilter);
     }
 
     if (displayMode === 'RANKING') {
-      return data.sort((a, b) => a.rank - b.rank).slice(0, 50);
+      return data.sort((a, b) => a.rank - b.rank);
     } else {
-      return data.sort((a, b) => b.lastTimestamp - a.lastTimestamp).slice(0, 50);
+      return data.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
     }
-  }, [results, genderFilter, displayMode, race.id]);
+  }, [kernelResults, genderFilter, displayMode]);
 
   return (
-    <div className="flex-1 min-w-[450px] flex flex-col bg-[#020617] relative">
+    <div className="flex-1 min-w-[420px] max-w-[500px] flex flex-col bg-[#020617] border-r border-white/5">
+      {/* Column Header */}
       <div className="p-8 border-b border-white/5 bg-slate-900/30">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-3xl font-black tracking-tight text-white uppercase">{race.name}</h2>
+          <h2 className="text-2xl font-black tracking-tight text-white uppercase">{race.name}</h2>
           <span className="text-xs font-black text-indigo-400 uppercase tracking-widest">{race.distance} KM</span>
         </div>
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
              <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-               {displayMode === 'RANKING' ? 'Classement Provisoire' : 'Flux des arrivées'}
+               {displayMode === 'RANKING' ? 'Classement Provisoire' : 'Flux des Détections'}
              </p>
           </div>
           <p className="text-lg font-black mono text-emerald-500">
@@ -163,9 +183,10 @@ const RaceColumn: React.FC<RaceColumnProps> = ({ race, results, genderFilter, di
         </div>
       </div>
 
+      {/* Results List */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
-        <table className="w-full text-left border-collapse">
-          <thead>
+        <table className="w-full text-left">
+          <thead className="sticky top-0 bg-[#020617] z-10">
             <tr className="bg-white/5 text-[9px] font-black text-slate-500 uppercase tracking-widest">
               <th className="py-4 px-8">Pos</th>
               <th className="py-4 px-4">Dos.</th>
@@ -187,11 +208,11 @@ const RaceColumn: React.FC<RaceColumnProps> = ({ race, results, genderFilter, di
                   <span className="text-lg font-black mono text-indigo-400 tracking-tighter">#{r.bib}</span>
                 </td>
                 <td className="py-6 px-6">
-                  <p className="font-black text-sm text-white uppercase truncate w-40">{r.fullName}</p>
+                  <p className="font-black text-sm text-white uppercase truncate w-36">{r.fullName}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-[8px] font-black text-slate-500 uppercase">{r.category}</span>
                     <div className="w-1 h-1 bg-slate-700 rounded-full"></div>
-                    <span className="text-[8px] font-black text-indigo-500 uppercase">{r.lastCheckpointName}</span>
+                    <span className="text-[8px] font-black text-indigo-500 uppercase truncate max-w-[100px]">{r.lastCheckpointName}</span>
                   </div>
                 </td>
                 <td className="py-6 px-6 text-right">
@@ -203,7 +224,7 @@ const RaceColumn: React.FC<RaceColumnProps> = ({ race, results, genderFilter, di
             {columnData.length === 0 && (
               <tr>
                 <td colSpan={4} className="py-40 text-center">
-                  <p className="text-[10px] font-black text-slate-700 uppercase tracking-[0.3em]">En attente de data...</p>
+                  <p className="text-[10px] font-black text-slate-800 uppercase tracking-[0.3em]">En attente de data...</p>
                 </td>
               </tr>
             )}
