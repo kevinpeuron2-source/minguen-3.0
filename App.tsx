@@ -52,7 +52,7 @@ const TerminalGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <h2 className="text-2xl font-black text-slate-900 mb-6 uppercase">ACCÈS TERMINAL</h2>
           <form onSubmit={(e) => { e.preventDefault(); if(pass === config.terminalPassword) setIsTerminalAuth(true); else alert('Code incorrect'); }} className="space-y-6">
             <input type="password" placeholder="CODE TERMINAL" className="w-full bg-slate-50 border-2 rounded-2xl p-6 text-center text-4xl font-black outline-none focus:border-blue-500" value={pass} onChange={e => setPass(e.target.value)} autoFocus />
-            <button type="submit" className="w-full bg-blue-600 text-white py-6 rounded-2xl font-black text-xl flex items-center justify-center gap-3">OUVRIR LE TERMINAL <ArrowRight size={20} /></button>
+            <button type="submit" className="w-full bg-blue-600 text-white py-6 rounded-2xl font-black text-xl flex items-center justify-center gap-3">OUVRIR <ArrowRight size={20} /></button>
           </form>
         </div>
       </div>
@@ -73,7 +73,7 @@ const MarshalGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           <div className="w-20 h-20 bg-emerald-950 rounded-[2.2rem] flex items-center justify-center mx-auto mb-8 text-white"><Shield size={40} /></div>
           <h2 className="text-2xl font-black text-slate-900 mb-6 uppercase">ACCÈS SIGNALEUR</h2>
           <form onSubmit={(e) => { e.preventDefault(); if(pass === config.marshalPassword) setIsMarshalAuth(true); else alert('Code incorrect'); }} className="space-y-6">
-            <input type="password" placeholder="CODE SIGNALEUR" className="w-full bg-slate-50 border-2 rounded-2xl p-6 text-center text-4xl font-black outline-none focus:border-emerald-500" value={pass} onChange={e => setPass(e.target.value)} autoFocus />
+            <input type="password" placeholder="CODE" className="w-full bg-slate-50 border-2 rounded-2xl p-6 text-center text-4xl font-black outline-none focus:border-emerald-500" value={pass} onChange={e => setPass(e.target.value)} autoFocus />
             <button type="submit" className="w-full bg-emerald-600 text-white py-6 rounded-2xl font-black text-xl flex items-center justify-center gap-3">DÉMARRER <ArrowRight size={20} /></button>
           </form>
         </div>
