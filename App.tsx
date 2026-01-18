@@ -15,9 +15,10 @@ import RemoteFinishView from './views/RemoteFinishView';
 import FinishTerminalView from './views/FinishTerminalView';
 import SpeakerView from './views/SpeakerView';
 
-// Garde de sécurité pour l'accès Logiciel Global
+// Garde de sécurité Logiciel Global (HQ + Alain)
 const SoftwareGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAdmin } = useDatabase();
+  // Si pas connecté au logiciel, on renvoie vers l'AdminView qui sert de page de garde.
   if (!isAdmin) {
     return <AdminView />;
   }
@@ -29,14 +30,14 @@ const App: React.FC = () => {
     <DatabaseProvider>
       <Router>
         <Routes>
-          {/* Vues Broadcast & Bornes (Plein écran sans Sidebar) */}
+          {/* Bornes & Outils Découplés (Fullscreen / target="_blank") */}
           <Route path="/live" element={<LiveView />} />
           <Route path="/speaker" element={<SoftwareGuard><SpeakerView /></SoftwareGuard>} />
           <Route path="/finish-terminal" element={<FinishTerminalView />} />
           <Route path="/signaleur-terrain" element={<MarshalInputView />} />
           <Route path="/remote-finish" element={<RemoteFinishView />} />
           
-          {/* Administration protégée via Layout & Guard */}
+          {/* Logiciel QG - Protégé et Intégré au Layout */}
           <Route path="/*" element={
             <SoftwareGuard>
               <Layout>

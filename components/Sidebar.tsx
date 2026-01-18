@@ -27,7 +27,7 @@ const Sidebar: React.FC = () => {
     { path: '/timing', icon: Timer, label: 'Chronométrage' },
     { path: '/results', icon: Trophy, label: 'Leaders' },
     { path: '/signaleur', icon: ShieldCheck, label: 'Signaleurs' },
-    { path: '/admin', icon: Settings, label: 'Le QG' },
+    { path: '/admin', icon: Settings, label: 'Sécurité QG' },
   ];
 
   return (
@@ -38,7 +38,6 @@ const Sidebar: React.FC = () => {
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
     >
-      {/* Brand Logo Area */}
       <div className="h-20 flex items-center px-6 border-b border-slate-100 overflow-hidden shrink-0">
         <div className="flex items-center gap-4 min-w-[200px]">
           <div className="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-100">
@@ -50,7 +49,6 @@ const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Navigation Items */}
       <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto scrollbar-hide">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -67,60 +65,35 @@ const Sidebar: React.FC = () => {
               }`}
             >
               <Icon size={22} className={`shrink-0 ${isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-400'}`} />
-              <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${
-                isExpanded ? 'opacity-100' : 'opacity-0'
-              }`}>
+              <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
                 {item.label}
               </span>
-              {!isExpanded && (
-                <div className="absolute left-16 px-3 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
-                  {item.label}
-                </div>
-              )}
-              {isActive && (
-                <div className="absolute left-0 w-1 h-6 bg-indigo-600 rounded-full" />
-              )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Footer Links - Quick Access Tools */}
       <div className="p-4 border-t border-slate-100 space-y-2">
         <div className={`flex ${isExpanded ? 'flex-col space-y-2' : 'flex-col items-center space-y-4'}`}>
           <Link
             to="/speaker"
             target="_blank"
-            className={`flex items-center gap-4 px-3 py-3 rounded-xl transition-all font-bold group overflow-hidden ${
-              location.pathname === '/speaker' ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-blue-50 hover:text-blue-600'
-            }`}
+            className="flex items-center gap-4 px-3 py-3 rounded-xl text-blue-600 hover:bg-blue-50 transition-all font-bold group overflow-hidden"
           >
             <Mic size={22} className="shrink-0" />
             <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
               L'appli pour Alain
             </span>
-            {!isExpanded && (
-              <div className="absolute left-16 px-3 py-2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
-                Alain
-              </div>
-            )}
           </Link>
           <Link
             to="/finish-terminal"
             target="_blank"
-            className={`flex items-center gap-4 px-3 py-3 rounded-xl transition-all font-bold group overflow-hidden ${
-              location.pathname === '/finish-terminal' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-400 hover:bg-indigo-50 hover:text-indigo-600'
-            }`}
+            className="flex items-center gap-4 px-3 py-3 rounded-xl text-indigo-600 hover:bg-indigo-50 transition-all font-bold group overflow-hidden"
           >
             <Zap size={22} className="shrink-0" />
             <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
               Terminal Arrivée
             </span>
-            {!isExpanded && (
-              <div className="absolute left-16 px-3 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
-                Terminal
-              </div>
-            )}
           </Link>
           <Link
             to="/live"
@@ -131,26 +104,8 @@ const Sidebar: React.FC = () => {
             <span className={`transition-opacity duration-300 whitespace-nowrap text-sm ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
               MinguenLive
             </span>
-            {!isExpanded && (
-              <div className="absolute left-16 px-3 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
-                MinguenLive
-              </div>
-            )}
           </Link>
         </div>
-        
-        <div className="flex justify-center py-2 mt-2">
-          {isExpanded ? (
-            <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">OS 4.0 Stable</div>
-          ) : (
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-          )}
-        </div>
-      </div>
-
-      {/* Toggle Button Hint */}
-      <div className="absolute -right-3 top-1/2 -translate-y-1/2 bg-white border border-slate-200 p-1 rounded-full shadow-md text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-        {isExpanded ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
       </div>
     </aside>
   );
