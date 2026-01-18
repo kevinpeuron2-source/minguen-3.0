@@ -31,7 +31,7 @@ const AdminView: React.FC = () => {
     setLoading(true);
     await updateConfig(tempConfig);
     setLoading(false);
-    alert('Accès sécurisés mis à jour.');
+    alert('Barrières de sécurité mises à jour avec succès.');
   };
 
   const generateSimulationFromExisting = async () => {
@@ -82,7 +82,7 @@ const AdminView: React.FC = () => {
 
   const fullReset = async () => {
     if (resetConfirm !== 'RESET') return;
-    if (!confirm('Voulez-vous vraiment TOUT supprimer ?')) return;
+    if (!confirm('ATTENTION : Voulez-vous vraiment TOUT supprimer ?')) return;
     setLoading(true);
     try {
       const collections = ['passages', 'participants', 'races', 'active_marshals'];
@@ -104,11 +104,11 @@ const AdminView: React.FC = () => {
             <Shield size={48} />
           </div>
           <h2 className="text-3xl font-black text-slate-900 mb-2 uppercase tracking-tight leading-none">MINGUEN<br/>CHRONO 3.0</h2>
-          <p className="text-slate-400 mb-10 font-bold uppercase text-[10px] tracking-widest mt-2">Logiciel de Chronométrage Professionnel</p>
+          <p className="text-slate-400 mb-10 font-bold uppercase text-[10px] tracking-widest mt-2">Authentification requise pour le QG</p>
           <form onSubmit={handleAdminLogin} className="space-y-6">
             <input 
               type="password" 
-              placeholder="CODE MINGUEN 3.0"
+              placeholder="CODE QG"
               className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-5 text-center text-4xl font-black outline-none focus:border-indigo-500 transition-all"
               value={adminCode}
               onChange={e => setAdminCode(e.target.value)}
@@ -127,7 +127,7 @@ const AdminView: React.FC = () => {
     <div className="max-w-5xl mx-auto space-y-10 pb-20 animate-in fade-in">
       <header className="flex justify-between items-end">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tight">Le QG - Admin</h1>
+          <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tight">Le QG - Maintenance</h1>
           <div className="flex gap-4 mt-6">
              {(['tools', 'security', 'raze'] as const).map(tab => (
                <button 
@@ -137,7 +137,7 @@ const AdminView: React.FC = () => {
                   activeTab === tab ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
                 }`}
                >
-                 {tab === 'tools' ? 'Maintenance' : tab === 'security' ? 'Sécurité' : 'RAZ'}
+                 {tab === 'tools' ? 'Outils Tests' : tab === 'security' ? 'Sécurité' : 'Zone Critique'}
                </button>
              ))}
           </div>
@@ -150,12 +150,12 @@ const AdminView: React.FC = () => {
       {activeTab === 'tools' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           <div className="bg-white p-10 rounded-[3rem] border shadow-sm space-y-8">
-            <h2 className="text-2xl font-black text-slate-900 flex items-center gap-4"><Zap size={28} className="text-blue-600" /> Simulation</h2>
+            <h2 className="text-2xl font-black text-slate-900 flex items-center gap-4"><Zap size={28} className="text-blue-600" /> Outils d'aide</h2>
             <button disabled={loading} onClick={generateSimulationFromExisting} className="w-full text-left p-8 rounded-[2.5rem] bg-blue-50 border-2 border-blue-100 group hover:border-blue-300">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-black text-blue-700 text-xl uppercase">Simuler Courses</h3>
-                  <p className="text-sm text-blue-500 font-medium">Génère des arrivées</p>
+                  <h3 className="font-black text-blue-700 text-xl uppercase">Simulation Live</h3>
+                  <p className="text-sm text-blue-500 font-medium">Génère des passages aléatoires</p>
                 </div>
                 <Users className="text-blue-300" size={32} />
               </div>
@@ -166,12 +166,12 @@ const AdminView: React.FC = () => {
 
       {activeTab === 'security' && (
         <div className="bg-white p-12 rounded-[3.5rem] border shadow-soft space-y-10">
-          <h2 className="text-2xl font-black text-slate-900 flex items-center gap-4"><Shield size={28} className="text-indigo-600" /> Barrières de Sécurité</h2>
+          <h2 className="text-2xl font-black text-slate-900 flex items-center gap-4"><Shield size={28} className="text-indigo-600" /> Gestion des Accès</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
              {[
-               { id: 'softwarePassword', icon: Shield, label: 'Code Minguen 3.0', sub: 'QG & Alain', color: 'indigo' },
-               { id: 'marshalPassword', icon: ShieldCheck, label: 'Code Signaleurs', sub: 'Postes Terrain', color: 'emerald' },
-               { id: 'terminalPassword', icon: Terminal, label: 'Code Terminal', sub: 'Arrivées /terminal', color: 'blue' },
+               { id: 'softwarePassword', icon: Shield, label: 'Code QG Minguen 3.0', sub: 'QG & Alain', color: 'indigo' },
+               { id: 'terminalPassword', icon: Terminal, label: 'Code Terminal Arrivée', sub: 'Saisie /terminal', color: 'blue' },
+               { id: 'marshalPassword', icon: ShieldCheck, label: 'Code Signaleurs', sub: 'Postes Terrain /signaleur', color: 'emerald' },
              ].map(item => (
                 <div key={item.id} className="space-y-4 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
                    <div className="flex items-center gap-3 mb-2">
@@ -180,7 +180,7 @@ const AdminView: React.FC = () => {
                    </div>
                    <input 
                      type="text" 
-                     className="w-full bg-white border-2 border-slate-100 rounded-2xl p-6 font-black text-3xl text-center outline-none" 
+                     className="w-full bg-white border-2 border-slate-100 rounded-2xl p-6 font-black text-3xl text-center outline-none focus:border-indigo-500" 
                      value={tempConfig[item.id as keyof typeof tempConfig]} 
                      onChange={e => setTempConfig({...tempConfig, [item.id]: e.target.value})} 
                    />
@@ -188,17 +188,17 @@ const AdminView: React.FC = () => {
                 </div>
              ))}
           </div>
-          <button onClick={handleSaveSecurity} className="w-full bg-indigo-600 text-white py-8 rounded-[2rem] font-black text-xl shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition-all">
-            <Save size={24} /> METTRE À JOUR LES ACCÈS
+          <button onClick={handleSaveSecurity} className="w-full bg-indigo-600 text-white py-8 rounded-[2.5rem] font-black text-xl shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition-all">
+            <Save size={24} /> SAUVEGARDER LES CODES
           </button>
         </div>
       )}
 
       {activeTab === 'raze' && (
         <div className="bg-red-50 p-10 rounded-[3rem] border-2 border-red-100 space-y-8">
-          <h2 className="text-2xl font-black text-red-600 uppercase flex items-center gap-4"><RefreshCw size={28} /> Zone de Reset</h2>
+          <h2 className="text-2xl font-black text-red-600 uppercase flex items-center gap-4"><RefreshCw size={28} /> Réinitialisation</h2>
           <div className="space-y-6">
-            <p className="text-xs font-bold text-red-800 uppercase">Effacer tout l'événement actuel.</p>
+            <p className="text-xs font-bold text-red-800 uppercase">Tout effacer (passages, participants, courses).</p>
             <input 
               type="text" 
               placeholder="TAPER RESET" 
@@ -206,7 +206,7 @@ const AdminView: React.FC = () => {
               value={resetConfirm} 
               onChange={e => setResetConfirm(e.target.value)} 
             />
-            <button disabled={resetConfirm !== 'RESET'} onClick={fullReset} className="w-full py-6 rounded-2xl font-black bg-red-600 text-white uppercase text-xl disabled:opacity-30">RÉINITIALISER TOUT</button>
+            <button disabled={resetConfirm !== 'RESET'} onClick={fullReset} className="w-full py-6 rounded-2xl font-black bg-red-600 text-white uppercase text-xl disabled:opacity-30">RAZ TOTALE ÉVÉNEMENT</button>
           </div>
         </div>
       )}

@@ -27,7 +27,7 @@ const DatabaseContext = createContext<DatabaseContextType | undefined>(undefined
 export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [dbError, setDbError] = useState<string | null>(null);
   
-  // États d'authentification persistants localement
+  // États d'authentification persistants
   const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('minguen_software_auth') === 'true');
   const [isTerminalAuth, setIsTerminalAuth] = useState(() => localStorage.getItem('minguen_terminal_auth') === 'true');
   const [isMarshalAuth, setIsMarshalAuth] = useState(() => localStorage.getItem('minguen_marshal_auth') === 'true');
