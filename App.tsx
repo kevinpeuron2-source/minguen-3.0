@@ -16,7 +16,7 @@ import FinishTerminalView from './views/FinishTerminalView';
 import SpeakerView from './views/SpeakerView';
 import { Shield, Lock, Terminal, ArrowRight } from 'lucide-react';
 
-// GARDE LOGICIEL (PC COURSE & ALAIN)
+// GARDE LOGICIEL (PC COURSE)
 const SoftwareGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAdmin, setIsAdmin, config } = useDatabase();
   const [pass, setPass] = useState('');
@@ -88,14 +88,16 @@ const App: React.FC = () => {
     <DatabaseProvider>
       <Router>
         <Routes>
-          {/* VUES INDÉPENDANTES (Plein écran, standalone) */}
+          {/* VUES INDÉPENDANTES LIBRES */}
           <Route path="/live" element={<LiveView />} />
           <Route path="/speaker" element={<SpeakerView />} />
+          
+          {/* VUES INDÉPENDANTES AVEC CODES */}
           <Route path="/finish-terminal" element={<TerminalGuard><FinishTerminalView /></TerminalGuard>} />
           <Route path="/signaleur-terrain" element={<MarshalGuard><MarshalInputView /></MarshalGuard>} />
           <Route path="/remote-finish" element={<TerminalGuard><RemoteFinishView /></TerminalGuard>} />
           
-          {/* LOGICIEL QG (HQ) - Protégé et Intégré au Layout Sidebar */}
+          {/* LOGICIEL QG (HQ) */}
           <Route path="/*" element={
             <SoftwareGuard>
               <Layout>
