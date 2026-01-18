@@ -14,6 +14,10 @@ interface DatabaseContextType {
   isPermissionDenied: boolean;
   isAdmin: boolean;
   setIsAdmin: (isAdmin: boolean) => void;
+  isTerminalAuth: boolean;
+  setIsTerminalAuth: (val: boolean) => void;
+  isMarshalAuth: boolean;
+  setIsMarshalAuth: (val: boolean) => void;
   config: AppConfig;
   updateConfig: (newConfig: Partial<AppConfig>) => Promise<void>;
 }
@@ -22,12 +26,29 @@ const DatabaseContext = createContext<DatabaseContextType | undefined>(undefined
 
 export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [dbError, setDbError] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  
+  // États d'authentification persistants localement
+  const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('minguen_software_auth') === 'true');
+  const [isTerminalAuth, setIsTerminalAuth] = useState(() => localStorage.getItem('minguen_terminal_auth') === 'true');
+  const [isMarshalAuth, setIsMarshalAuth] = useState(() => localStorage.getItem('minguen_marshal_auth') === 'true');
+
   const [config, setConfig] = useState<AppConfig>({
     softwarePassword: '1805',
     marshalPassword: '2211',
     terminalPassword: '1234'
   });
+
+  useEffect(() => {
+    localStorage.setItem('minguen_software_auth', isAdmin.toString());
+  }, [isAdmin]);
+
+  useEffect(() => {
+    localStorage.setItem('minguen_terminal_auth', isTerminalAuth.toString());
+  }, [isTerminalAuth]);
+
+  useEffect(() => {
+    localStorage.setItem('minguen_marshal_auth', isMarshalAuth.toString());
+  }, [isMarshalAuth]);
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'settings', 'security'), (snap) => {
@@ -58,7 +79,19 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const isPermissionDenied = !!dbError && dbError.toLowerCase().includes('permission');
 
   return (
-    <DatabaseContext.Provider value={{ dbError, setDbError: handleSetError, isPermissionDenied, isAdmin, setIsAdmin, config, updateConfig }}>
+    <DatabaseContext.Provider value={{ 
+      dbError, 
+      setDbError: handleSetError, 
+      isPermissionDenied, 
+      isAdmin, 
+      setIsAdmin,
+      isTerminalAuth,
+      setIsTerminalAuth,
+      isMarshalAuth,
+      setIsMarshalAuth,
+      config, 
+      updateConfig 
+    }}>
       {children}
     </DatabaseContext.Provider>
   );

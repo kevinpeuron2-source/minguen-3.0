@@ -7,11 +7,7 @@ import { MapPin, Shield, Send, CheckCircle2, Layers, AlertCircle, ChevronRight, 
 import { useDatabase } from '../context/DatabaseContext';
 
 const MarshalInputView: React.FC = () => {
-  const { config } = useDatabase();
   const [searchParams] = useSearchParams();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authCode, setAuthCode] = useState('');
-  
   const [isRegistered, setIsRegistered] = useState(false);
   const [marshalName, setMarshalName] = useState('');
   const [bibInput, setBibInput] = useState('');
@@ -30,8 +26,6 @@ const MarshalInputView: React.FC = () => {
   const marshalId = useRef(crypto.randomUUID());
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-    
     // Charger les courses
     onSnapshot(collection(db, 'races'), snap => {
       setRaces(snap.docs.map(d => ({ id: d.id, ...d.data() } as Race)));
@@ -62,10 +56,10 @@ const MarshalInputView: React.FC = () => {
       setActiveRaceId(raceId);
       setActiveCpId(cpId);
     }
-  }, [raceId, combinedPostId, cpId, isAuthenticated]);
+  }, [raceId, combinedPostId, cpId]);
 
   useEffect(() => {
-    if (!isRegistered || !isAuthenticated) return;
+    if (!isRegistered) return;
     const interval = setInterval(async () => {
       const race = races.find(r => r.id === activeRaceId);
       const cp = race?.checkpoints.find(c => c.id === activeCpId);
@@ -79,16 +73,7 @@ const MarshalInputView: React.FC = () => {
       });
     }, 10000);
     return () => clearInterval(interval);
-  }, [isRegistered, marshalName, activeRaceId, activeCpId, races, combinedPost, isAuthenticated]);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (authCode === config.marshalPassword) {
-      setIsAuthenticated(true);
-    } else {
-      alert('Code Signaleur Incorrect');
-    }
-  };
+  }, [isRegistered, marshalName, activeRaceId, activeCpId, races, combinedPost]);
 
   const handlePointage = async () => {
     if (!bibInput) return;
@@ -132,32 +117,6 @@ const MarshalInputView: React.FC = () => {
     setTimeout(() => setLastValidation(null), 3000);
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="fixed inset-0 bg-slate-950 flex items-center justify-center p-6">
-        <div className="bg-white p-12 rounded-[3.5rem] w-full max-w-md text-center shadow-2xl">
-          <div className="w-20 h-20 bg-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-8 text-white shadow-xl">
-            <Shield size={40} />
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-6 uppercase">Pointage Terrain</h2>
-          <form onSubmit={handleLogin} className="space-y-6">
-            <input 
-              type="password" 
-              placeholder="CODE" 
-              className="w-full bg-slate-50 border-2 rounded-2xl p-6 text-center text-4xl font-black outline-none focus:border-emerald-500"
-              value={authCode}
-              onChange={e => setAuthCode(e.target.value)}
-              autoFocus
-            />
-            <button type="submit" className="w-full bg-emerald-600 text-white py-6 rounded-2xl font-black text-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
-              DÉMARRER <ArrowRight size={24} />
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
   if (!isRegistered) {
     return (
       <div className="fixed inset-0 bg-slate-900 flex items-center justify-center p-6">
@@ -165,11 +124,11 @@ const MarshalInputView: React.FC = () => {
           <div className="bg-blue-600 w-16 h-16 rounded-2xl flex items-center justify-center text-white mb-8 shadow-xl">
             <Shield size={32} />
           </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">Identification</h2>
-          <p className="text-slate-500 mb-10 font-medium">Saisissez votre nom pour la supervision.</p>
+          <h2 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">Poste Signaleur</h2>
+          <p className="text-slate-500 mb-10 font-medium">Identifiez-vous pour ouvrir le poste.</p>
           <input 
             type="text" 
-            placeholder="Prénom / Nom"
+            placeholder="Votre Prénom / Nom"
             className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-5 font-black mb-6 outline-none focus:border-blue-500 transition-all text-lg"
             value={marshalName}
             onChange={e => setMarshalName(e.target.value)}
@@ -179,7 +138,7 @@ const MarshalInputView: React.FC = () => {
             onClick={() => setIsRegistered(true)}
             className="w-full bg-blue-600 text-white py-6 rounded-2xl font-black text-xl shadow-xl hover:bg-blue-700 transition-all active:scale-95"
           >
-            OUVRIR LE POSTE
+            OUVRIR LE POINTAGE
           </button>
         </div>
       </div>
@@ -228,7 +187,7 @@ const MarshalInputView: React.FC = () => {
           </div>
         )}
 
-        <div className="bg-slate-950 rounded-[3rem] p-10 text-white shadow-2xl text-center relative overflow-hidden flex-1">
+        <div className="bg-slate-950 rounded-[3rem] p-10 text-white shadow-2xl text-center relative overflow-hidden flex-1 shrink-0">
            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/10 rounded-full -mr-24 -mt-24 blur-3xl"></div>
            
            <div className="relative z-10 h-full flex flex-col justify-center">

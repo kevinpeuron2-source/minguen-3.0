@@ -17,10 +17,6 @@ import {
 import { useDatabase } from '../context/DatabaseContext';
 
 const FinishTerminalView: React.FC = () => {
-  const { config } = useDatabase();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authCode, setAuthCode] = useState('');
-  
   const [races, setRaces] = useState<Race[]>([]);
   const [selectedRaceId, setSelectedRaceId] = useState('');
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -31,7 +27,6 @@ const FinishTerminalView: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
     const unsubRaces = onSnapshot(collection(db, 'races'), snap => {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Race));
       setRaces(list);
@@ -53,26 +48,16 @@ const FinishTerminalView: React.FC = () => {
     });
 
     return () => { unsubRaces(); unsubParts(); unsubPassages(); };
-  }, [selectedRaceId, isAuthenticated]);
+  }, [selectedRaceId]);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
     const interval = setInterval(() => {
       if (document.activeElement !== inputRef.current) {
         inputRef.current?.focus();
       }
     }, 500);
     return () => clearInterval(interval);
-  }, [isAuthenticated]);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (authCode === config.terminalPassword) {
-      setIsAuthenticated(true);
-    } else {
-      alert('Code Terminal Incorrect');
-    }
-  };
+  }, []);
 
   const activeRace = useMemo(() => races.find(r => r.id === selectedRaceId), [races, selectedRaceId]);
 
@@ -119,37 +104,11 @@ const FinishTerminalView: React.FC = () => {
     await updateDoc(doc(db, 'participants', passage.participantId), { status: ParticipantStatus.STARTED });
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="fixed inset-0 bg-[#020617] flex items-center justify-center p-6">
-        <div className="bg-white p-12 rounded-[3.5rem] w-full max-w-md text-center">
-          <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-8 text-white">
-            <Lock size={40} />
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-6 uppercase">Accès Bénévole Arrivée</h2>
-          <form onSubmit={handleLogin} className="space-y-6">
-            <input 
-              type="password" 
-              placeholder="CODE TERMINAL" 
-              className="w-full bg-slate-50 border-2 rounded-2xl p-6 text-center text-4xl font-black"
-              value={authCode}
-              onChange={e => setAuthCode(e.target.value)}
-              autoFocus
-            />
-            <button type="submit" className="w-full bg-indigo-600 text-white py-6 rounded-2xl font-black text-xl flex items-center justify-center gap-3">
-              OUVRIR LE TERMINAL <ArrowRight size={24} />
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="fixed inset-0 bg-[#020617] text-white flex flex-col font-sans overflow-hidden select-none">
-      <header className="bg-slate-900/50 border-b border-white/5 px-10 py-6 flex justify-between items-center z-20 backdrop-blur-md">
+      <header className="bg-slate-900/50 border-b border-white/5 px-10 py-6 flex justify-between items-center z-20 backdrop-blur-md shrink-0">
         <div className="flex items-center gap-6">
-          <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center">
+          <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl">
             <Timer size={24} />
           </div>
           <div>
