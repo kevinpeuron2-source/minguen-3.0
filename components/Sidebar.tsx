@@ -90,6 +90,7 @@ const Sidebar: React.FC = () => {
         <div className={`flex ${isExpanded ? 'flex-col space-y-2' : 'flex-col items-center space-y-4'}`}>
           <Link
             to="/speaker"
+            target="_blank"
             className={`flex items-center gap-4 px-3 py-3 rounded-xl transition-all font-bold group overflow-hidden ${
               location.pathname === '/speaker' ? 'bg-blue-50 text-blue-600' : 'text-slate-400 hover:bg-blue-50 hover:text-blue-600'
             }`}
@@ -106,6 +107,7 @@ const Sidebar: React.FC = () => {
           </Link>
           <Link
             to="/finish-terminal"
+            target="_blank"
             className={`flex items-center gap-4 px-3 py-3 rounded-xl transition-all font-bold group overflow-hidden ${
               location.pathname === '/finish-terminal' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-400 hover:bg-indigo-50 hover:text-indigo-600'
             }`}
