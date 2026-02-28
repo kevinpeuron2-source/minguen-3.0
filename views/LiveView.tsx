@@ -4,7 +4,8 @@ import { db } from '../firebase';
 import { useRaceKernel } from '../hooks/useRaceKernel';
 import { 
   Activity, 
-  Zap
+  Zap,
+  RefreshCw
 } from 'lucide-react';
 import { ParticipantStatus, Race } from '../types';
 
@@ -147,12 +148,16 @@ interface RaceColumnProps {
 }
 
 const RaceColumn: React.FC<RaceColumnProps> = ({ race, genderFilter, displayMode }) => {
-  const { kernelResults } = useRaceKernel(race.id);
+  const { kernelResults, refreshRanking } = useRaceKernel(race.id);
 
   const columnData = useMemo(() => {
     let data = [...kernelResults].filter(r => r.netTimeMs > 0 || r.status !== ParticipantStatus.REGISTERED);
     if (genderFilter !== 'ALL') data = data.filter(r => r.gender === genderFilter);
-    if (displayMode === 'RANKING') return data.sort((a, b) => a.rank - b.rank);
+    
+    if (displayMode === 'RANKING') {
+      return data.sort((a, b) => a.rank - b.rank);
+    }
+    
     return data.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
   }, [kernelResults, genderFilter, displayMode]);
 
@@ -169,6 +174,14 @@ const RaceColumn: React.FC<RaceColumnProps> = ({ race, genderFilter, displayMode
              <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
                {displayMode === 'RANKING' ? 'PROVISOIRE' : 'LIVE FEED'}
              </p>
+             <button 
+               onClick={refreshRanking}
+               className="ml-2 flex items-center gap-1 bg-orange-500/10 text-orange-500 px-2 py-1 rounded hover:bg-orange-500/20 transition-colors"
+               title="Recalculer les rangs"
+             >
+               <RefreshCw size={10} />
+               <span className="text-[8px] font-black uppercase">RECALCULER</span>
+             </button>
           </div>
           <p className="text-base font-black mono text-emerald-500">
             {race.startTime ? new Date(Date.now() - race.startTime).toISOString().substr(11, 8) : '00:00:00'}

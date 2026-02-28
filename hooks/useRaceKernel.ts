@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { collection, onSnapshot, query, orderBy, writeBatch, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Race, Participant, Passage, RenderReadyResult, RaceStats, ParticipantStatus, SegmentStats } from '../types';
 import { formatMsToDisplay, calculateSpeed } from '../utils/formatters';
@@ -126,6 +126,10 @@ export const useRaceKernel = (selectedRaceId: string) => {
       if (a.passedCheckpointsCount !== b.passedCheckpointsCount) {
         return b.passedCheckpointsCount - a.passedCheckpointsCount;
       }
+      // Use netTimeMs for sorting if available, otherwise fallback to lastTimestamp
+      if (a.netTimeMs > 0 && b.netTimeMs > 0) {
+        return a.netTimeMs - b.netTimeMs;
+      }
       return a.lastTimestamp - b.lastTimestamp;
     }).map((item, index) => ({ ...item, rank: index + 1 }));
 
@@ -172,5 +176,26 @@ export const useRaceKernel = (selectedRaceId: string) => {
     };
   }, [kernelResults]);
 
-  return { kernelResults, stats, races, isSyncing };
+  const refreshRanking = useCallback(async () => {
+    if (kernelResults.length === 0) return;
+    
+    const batch = writeBatch(db);
+    kernelResults.forEach(r => {
+      const ref = doc(db, 'participants', r.id);
+      batch.update(ref, {
+        rank: r.rank,
+        rankCategory: r.rankCategory,
+        rankGender: r.rankGender
+      });
+    });
+
+    try {
+      await batch.commit();
+      console.log('Rangs recalculés et mis à jour dans Firebase');
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour des rangs:', error);
+    }
+  }, [kernelResults]);
+
+  return { kernelResults, stats, races, isSyncing, refreshRanking };
 };
