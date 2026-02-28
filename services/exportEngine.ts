@@ -10,8 +10,10 @@ export const generateResultsCSV = (results: RenderReadyResult[], raceName: strin
   const headers = [
     "Rang",
     "Dossard",
-    "Nom Complet",
+    "Nom",
+    "Prénom",
     "Catégorie",
+    "Place_Cat",
     "Sexe",
     "Club",
     "Dernier Point",
@@ -23,8 +25,10 @@ export const generateResultsCSV = (results: RenderReadyResult[], raceName: strin
   const rows = results.map(r => [
     r.rank,
     sanitizeForCSV(r.bib),
-    sanitizeForCSV(r.fullName),
+    sanitizeForCSV(r.lastName),
+    sanitizeForCSV(r.firstName),
     sanitizeForCSV(r.category),
+    r.rankCategory,
     sanitizeForCSV(r.gender),
     sanitizeForCSV(r.club),
     sanitizeForCSV(r.lastCheckpointName),

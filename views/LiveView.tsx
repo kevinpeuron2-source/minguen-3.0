@@ -200,9 +200,13 @@ const RaceColumn: React.FC<RaceColumnProps> = ({ race, genderFilter, displayMode
                   <span className="text-base font-black mono text-indigo-400 tracking-tighter">#{r.bib}</span>
                 </td>
                 <td className="py-4 px-4">
-                  <p className="font-black text-xs text-white uppercase truncate w-32">{r.fullName}</p>
+                  <p className="font-black text-xs text-white uppercase truncate w-32">
+                    <span className="font-black">{r.lastName.toUpperCase()}</span> <span>{r.firstName}</span>
+                  </p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[7px] font-black text-slate-500 uppercase">{r.category}</span>
+                    <span className="text-[7px] font-black text-slate-500 uppercase">
+                      {r.category} ({r.rankCategory}{r.rankCategory === 1 ? 'er' : 'ème'})
+                    </span>
                     <div className="w-0.5 h-0.5 bg-slate-700 rounded-full"></div>
                     <span className="text-[7px] font-black text-indigo-500 uppercase truncate max-w-[80px]">{r.lastCheckpointName}</span>
                   </div>
